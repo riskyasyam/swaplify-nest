@@ -1,6 +1,7 @@
-import { Body, Controller, Get, Post, Delete, Param } from '@nestjs/common';
+import { Body, Controller, Get, Post, Delete, Param, UseGuards } from '@nestjs/common';
 import { UserService } from './user.service';
 import { CreateUserDto } from './dto/create-user.dto';
+import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 
 @Controller('user')
 export class UserController {
@@ -13,13 +14,23 @@ export class UserController {
         return result;
     }
 
+    @UseGuards(JwtAuthGuard)
     @Get()
     async getAllUser() {
         return this.userService.getAllUser();
     }
 
+    @UseGuards(JwtAuthGuard)
     @Delete(':id')
     async deleteUser(@Param('id') id: string) {
-        return this.userService.deleteUser(+id);
+        const deletedUser = await this.userService.deleteUser(+id);
+        return{
+            message: `User dengan id ${id} berhasil dihapus`,
+            user: {
+                id: deletedUser.id,
+                email: deletedUser.email,
+                createdAt: deletedUser.createdAt,
+            }
+        }
     }
 }

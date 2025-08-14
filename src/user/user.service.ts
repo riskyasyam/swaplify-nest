@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Param } from '@nestjs/common';
 import { User } from 'generated/prisma';
 import { PrismaService } from 'src/prisma/prisma.service';
 import * as bcrypt from 'bcrypt';
@@ -31,5 +31,9 @@ export class UserService {
         return this.prisma.user.delete({
             where: { id },
         });
+    }
+    
+    async findByEmail(email: string) {
+        return this.prisma.user.findUnique({ where: { email } });
     }
 }
