@@ -30,4 +30,26 @@ export class AuthService {
             accessToken: token,
         };
     }
+
+    async validateOAuthUser(userData: { email: string; firstName?: string; lastName?: string; accessToken?: string }) {
+        let user = await this.userService.findByEmail(userData.email);
+
+        const randomPassword = await bcrypt.hash(Math.random().toString(36), 10);
+        if (!user) {
+        // kalau belum ada → buat user baru
+        user = await this.userService.createUser({
+            email: userData.email,
+            password: randomPassword,
+        });
+        }
+
+        const payload = { sub: user.id, email: user.email };
+        const token = this.jwtService.sign(payload);
+
+        return {
+        message: 'Login Google berhasil',
+        accessToken: token,
+        user,
+        };
+    } 
 }
