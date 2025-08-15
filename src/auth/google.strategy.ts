@@ -19,20 +19,52 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
       ],
     });
   }
+  
+  authorizationParams(): any {
+    return {
+      prompt: 'select_account',
+      // kalau mau paksa login ulang beneran: prompt: 'login'
+      // bisa juga tambahkan login_hint / hd kalau perlu
+    };
+  }
 
   async validate(
-    accessToken: string,
-    refreshToken: string,
-    profile: any,
-    done: VerifyCallback,
+  accessToken: string,
+  refreshToken: string,
+  profile: any,
+  done: VerifyCallback,
   ): Promise<any> {
-    const { emails, name } = profile;
+    // OPTIONAL: saat debug, lihat struktur profile dari Google
+    // console.log(JSON.stringify(profile, null, 2));
+
+    const { emails, name, displayName, photos, _json } = profile;
+
+    // Ambil email aman
+    const email = emails?.[0]?.value ?? _json?.email;
+
+    // Fallback chain untuk firstName / lastName
+    const firstName =
+      name?.givenName ??
+      _json?.given_name ??
+      (displayName ? displayName.split(' ')[0] : undefined);
+
+    const lastName =
+      name?.familyName ??
+      _json?.family_name ??
+      (displayName
+        ? displayName.split(' ').slice(1).join(' ') || undefined
+        : undefined);
+
+    // Foto profil (kalau mau disimpan)
+    const picture = photos?.[0]?.value ?? _json?.picture;
 
     const user = await this.authService.validateOAuthUser({
-      email: emails?.[0]?.value,
-      firstName: name?.givenName,
-      lastName: name?.familyName,
-      accessToken, // simpan juga token kalau mau dipakai
+      email,
+      firstName,
+      lastName,
+      picture,
+      accessToken,  // pakai kalau perlu akses Google API
+      // picture,   // aktifkan kalau service/DB kamu sudah menampungnya
     });
 
     done(null, user);

@@ -14,10 +14,51 @@ datasource db {
 }
 
 model User {
-  id        Int       @id @default(autoincrement())
-  email     String    @unique
-  firstName String?
-  lastName  String?
-  password  String
-  createdAt DateTime  @default(now())
+  id             Int               @id @default(autoincrement())
+  email          String            @unique
+  password       String
+  firstName      String?
+  lastName       String?
+  picture        String?
+  createdAt      DateTime          @default(now())
+
+  subscriptions  UserSubscription[]
+  usages         UsageDaily[]
+}
+
+model Plan {
+  id             Int               @id @default(autoincrement())
+  code           String            @unique   // "FREE", "PREMIUM", "PRO"
+  name           String
+  maxProcessors  Int
+  requestsPerDay Int
+  priceCents     Int               @default(0)
+  createdAt      DateTime          @default(now())
+
+  subscriptions  UserSubscription[]
+}
+
+model UserSubscription {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  planId    Int
+  isActive  Boolean  @default(true)
+  startedAt DateTime @default(now())
+  endedAt   DateTime?
+  expiresAt DateTime?
+
+  user User @relation(fields: [userId], references: [id])
+  plan Plan @relation(fields: [planId], references: [id])
+
+  @@index([userId, isActive])
+}
+
+model UsageDaily {
+  id     Int      @id @default(autoincrement())
+  userId Int
+  date   DateTime
+  used   Int      @default(0)
+
+  user User @relation(fields: [userId], references: [id])
+  @@unique([userId, date]) // satu baris per user per hari
 }
