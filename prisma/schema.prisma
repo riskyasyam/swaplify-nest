@@ -14,36 +14,37 @@ datasource db {
 }
 
 model User {
-  id             Int               @id @default(autoincrement())
-  email          String            @unique
-  password       String
-  firstName      String?
-  lastName       String?
-  picture        String?
-  createdAt      DateTime          @default(now())
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  password  String
+  firstName String?
+  lastName  String?
+  picture   String?
+  createdAt DateTime @default(now())
 
-  subscriptions  UserSubscription[]
-  usages         UsageDaily[]
+  subscriptions UserSubscription[]
+  usages        UsageDaily[]
+  FusionJob     FusionJob[]
 }
 
 model Plan {
-  id             Int               @id @default(autoincrement())
-  code           String            @unique   // "FREE", "PREMIUM", "PRO"
+  id             Int      @id @default(autoincrement())
+  code           String   @unique // "FREE", "PREMIUM", "PRO"
   name           String
   maxProcessors  Int
   requestsPerDay Int
-  priceCents     Int               @default(0)
-  createdAt      DateTime          @default(now())
+  priceCents     Int      @default(0)
+  createdAt      DateTime @default(now())
 
-  subscriptions  UserSubscription[]
+  subscriptions UserSubscription[]
 }
 
 model UserSubscription {
-  id        Int      @id @default(autoincrement())
+  id        Int       @id @default(autoincrement())
   userId    Int
   planId    Int
-  isActive  Boolean  @default(true)
-  startedAt DateTime @default(now())
+  isActive  Boolean   @default(true)
+  startedAt DateTime  @default(now())
   endedAt   DateTime?
   expiresAt DateTime?
 
@@ -60,5 +61,29 @@ model UsageDaily {
   used   Int      @default(0)
 
   user User @relation(fields: [userId], references: [id])
+
   @@unique([userId, date]) // satu baris per user per hari
+}
+
+model FusionJob {
+  id           String    @id @default(cuid())
+  userId       Int
+  status       JobStatus @default(PENDING)
+  sourceKey    String?
+  targetKey    String?
+  outputKey    String?
+  errorMessage String?
+  processors   Int       @default(1)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id])
+}
+
+enum JobStatus {
+  PENDING
+  QUEUED
+  PROCESSING
+  DONE
+  FAILED
 }
