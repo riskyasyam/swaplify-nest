@@ -7,6 +7,10 @@ import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 export class UserController {
     constructor(private readonly userService: UserService) {}
 
+    @Get(':id/quota')
+    async getUserQuota(@Param('id') id: string) {
+        return this.userService.getUserQuota(Number(id));
+    }
     @Post()
     async createUser(@Body() data: CreateUserDto){
         const user = await this.userService.createUser(data);

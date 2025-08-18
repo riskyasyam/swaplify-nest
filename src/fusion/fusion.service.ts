@@ -1,4 +1,4 @@
-import { Injectable, HttpException } from '@nestjs/common';
+import { Injectable, HttpException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { S3Service } from 'src/files/s3.service';
 import fetch from 'node-fetch';
@@ -9,6 +9,8 @@ export class FusionService {
     private prisma: PrismaService,
     private s3: S3Service,
   ) {}
+
+  
 
   async createJob(userId: number, dto: { sourceKey: string; targetKey: string; processors?: number }) {
     // Optional: HEAD ke S3 untuk validasi file ada
