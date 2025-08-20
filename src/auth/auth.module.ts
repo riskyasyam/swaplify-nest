@@ -1,27 +1,22 @@
-import { Inject, Module } from '@nestjs/common';
-import { AuthController } from './auth.controller';
-import { AuthService } from './auth.service';
-import { UserModule } from 'src/user/user.module';
-import { JwtModule } from '@nestjs/jwt';
-import { ConfigModule, ConfigService } from '@nestjs/config';
+import { Module } from '@nestjs/common';
 import { PassportModule } from '@nestjs/passport';
-import { GoogleStrategy } from './google.strategy';
+import { JwtModule } from '@nestjs/jwt';
+import { JwtStrategy } from './jwt.strategy';
+import { PrimeAuthController } from './primeauth.controller';
+import { PrismaModule } from 'src/prisma/prisma.module';
+import { AuthService } from './auth.service';
+import { OidcProviderService } from './oidc-provider.service';
+import { OidcCallbackController } from './oidc-callback.controller';
+import { AuthController } from './auth.controller';
 
 @Module({
   imports: [
-    UserModule,
     PassportModule,
-    JwtModule.registerAsync({
-      global: true,
-      imports: [ConfigModule],
-      inject: [ConfigService],
-      useFactory: async (configService: ConfigService) => ({
-        secret: configService.get<string>('JWT_SECRET') || 'secretKey',
-        signOptions: { expiresIn: '1h' },
-      }),
-    }),
+    JwtModule.register({}) // tidak menerbitkan token sendiri; hanya supaya guard aktif
+    ,PrismaModule,
   ],
-  controllers: [AuthController],
-  providers: [AuthService, GoogleStrategy,]
+  controllers: [AuthController, PrimeAuthController, OidcCallbackController],
+  providers: [JwtStrategy, AuthService, OidcProviderService],
+  exports: [AuthService]
 })
 export class AuthModule {}

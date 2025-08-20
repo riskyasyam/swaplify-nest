@@ -1,40 +1,32 @@
-import { Body, Controller, Get, Post, Delete, Param, UseGuards } from '@nestjs/common';
+import { Controller, Get, Delete, Param, UseGuards } from '@nestjs/common';
 import { UserService } from './user.service';
-import { CreateUserDto } from './dto/create-user.dto';
-import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
+import { Roles } from 'src/common/decorators/roles.decorator';
+import { AuthGuard } from '@nestjs/passport';
 
 @Controller('user')
 export class UserController {
-    constructor(private readonly userService: UserService) {}
+  constructor(private readonly userService: UserService) {}
 
-    @Get(':id/quota')
-    async getUserQuota(@Param('id') id: string) {
-        return this.userService.getUserQuota(Number(id));
-    }
-    @Post()
-    async createUser(@Body() data: CreateUserDto){
-        const user = await this.userService.createUser(data);
-        const { password, ...result } = user;
-        return result;
-    }
+  @Get(':id/quota')
+  async getUserQuota(@Param('id') id: string) {
+    return this.userService.getUserQuota(Number(id));
+  }
 
-    @UseGuards(JwtAuthGuard)
-    @Get()
-    async getAllUser() {
-        return this.userService.getAllUser();
-    }
+  @UseGuards(AuthGuard('jwt'))
+  @Roles('ADMIN')
+  @Get()
+  async getAllUser() {
+    return this.userService.getAllUser();
+  }
 
-    @UseGuards(JwtAuthGuard)
-    @Delete(':id')
-    async deleteUser(@Param('id') id: string) {
-        const deletedUser = await this.userService.deleteUser(+id);
-        return{
-            message: `User dengan id ${id} berhasil dihapus`,
-            user: {
-                id: deletedUser.id,
-                email: deletedUser.email,
-                createdAt: deletedUser.createdAt,
-            }
-        }
-    }
+  @UseGuards(AuthGuard('jwt'))
+  @Roles('ADMIN')
+  @Delete(':id')
+  async deleteUser(@Param('id') id: string) {
+    const deletedUser = await this.userService.deleteUser(+id);
+    return {
+      message: `User ${id} dihapus`,
+      user: { id: deletedUser.id, email: deletedUser.email, createdAt: deletedUser.createdAt },
+    };
+  }
 }

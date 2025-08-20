@@ -1,0 +1,2559 @@
+{
+  "$schema": "https://raw.githubusercontent.com/dineug/erd-editor/main/json-schema/schema.json",
+  "version": "3.0.0",
+  "settings": {
+    "width": 4000,
+    "height": 4000,
+    "scrollTop": -398.2359,
+    "scrollLeft": -262.7957,
+    "zoomLevel": 1,
+    "show": 431,
+    "database": 4,
+    "databaseName": "FaceFusion",
+    "canvasType": "ERD",
+    "language": 1,
+    "tableNameCase": 4,
+    "columnNameCase": 2,
+    "bracketType": 1,
+    "relationshipDataTypeSync": true,
+    "relationshipOptimization": false,
+    "columnOrder": [
+      1,
+      2,
+      4,
+      8,
+      16,
+      32,
+      64
+    ],
+    "maxWidthComment": -1,
+    "ignoreSaveSettings": 0
+  },
+  "doc": {
+    "tableIds": [
+      "tbl_000",
+      "tbl_001",
+      "tbl_002",
+      "tbl_003",
+      "tbl_004",
+      "tbl_005",
+      "tbl_006",
+      "tbl_007",
+      "tbl_008",
+      "tbl_009",
+      "tbl_010"
+    ],
+    "relationshipIds": [
+      "rel_000",
+      "rel_001",
+      "rel_002",
+      "rel_003",
+      "rel_004",
+      "rel_005",
+      "rel_006",
+      "rel_007",
+      "rel_008",
+      "rel_009",
+      "rel_010",
+      "rel_011",
+      "rel_012",
+      "rel_013"
+    ],
+    "indexIds": [
+      "idx_000",
+      "idx_001"
+    ],
+    "memoIds": []
+  },
+  "collections": {
+    "tableEntities": {
+      "tbl_000": {
+        "id": "tbl_000",
+        "name": "users",
+        "comment": "",
+        "columnIds": [
+          "col_0_000",
+          "col_0_001",
+          "col_0_002",
+          "col_0_003",
+          "col_0_004",
+          "13IV9gEuHK2_lp7l9f4WF"
+        ],
+        "seqColumnIds": [
+          "col_0_000",
+          "col_0_001",
+          "col_0_002",
+          "col_0_003",
+          "col_0_004",
+          "13IV9gEuHK2_lp7l9f4WF"
+        ],
+        "ui": {
+          "x": 341.8182,
+          "y": 414.5454,
+          "zIndex": 1,
+          "widthName": 60,
+          "widthComment": 60,
+          "color": ""
+        },
+        "meta": {
+          "updateAt": 1755055192123,
+          "createAt": 1755053793440
+        }
+      },
+      "tbl_001": {
+        "id": "tbl_001",
+        "name": "media_assets",
+        "comment": "",
+        "columnIds": [
+          "col_1_000",
+          "col_1_001",
+          "col_1_002",
+          "col_1_003",
+          "col_1_004",
+          "col_1_005",
+          "col_1_006",
+          "col_1_007",
+          "col_1_008",
+          "col_1_009",
+          "col_1_010",
+          "col_1_011"
+        ],
+        "seqColumnIds": [
+          "col_1_000",
+          "col_1_001",
+          "col_1_002",
+          "col_1_003",
+          "col_1_004",
+          "col_1_005",
+          "col_1_006",
+          "col_1_007",
+          "col_1_008",
+          "col_1_009",
+          "col_1_010",
+          "col_1_011"
+        ],
+        "ui": {
+          "x": 1709.5325,
+          "y": 606.6438,
+          "zIndex": 2,
+          "widthName": 71,
+          "widthComment": 60,
+          "color": ""
+        },
+        "meta": {
+          "updateAt": 1755055694162,
+          "createAt": 1755053793440
+        }
+      },
+      "tbl_002": {
+        "id": "tbl_002",
+        "name": "jobs",
+        "comment": "",
+        "columnIds": [
+          "col_2_000",
+          "col_2_001",
+          "col_2_002",
+          "col_2_003",
+          "col_2_004",
+          "col_2_005",
+          "col_2_006",
+          "col_2_007",
+          "col_2_008",
+          "col_2_009",
+          "col_2_010",
+          "col_2_011",
+          "col_2_012",
+          "col_2_013"
+        ],
+        "seqColumnIds": [
+          "col_2_000",
+          "col_2_001",
+          "col_2_002",
+          "col_2_003",
+          "col_2_004",
+          "col_2_005",
+          "col_2_006",
+          "col_2_007",
+          "col_2_008",
+          "col_2_009",
+          "col_2_010",
+          "col_2_011",
+          "col_2_012",
+          "col_2_013"
+        ],
+        "ui": {
+          "x": 925.2036,
+          "y": 695.8918,
+          "zIndex": 3,
+          "widthName": 60,
+          "widthComment": 60,
+          "color": ""
+        },
+        "meta": {
+          "updateAt": 1755055704572,
+          "createAt": 1755053793440
+        }
+      },
+      "tbl_003": {
+        "id": "tbl_003",
+        "name": "job_events",
+        "comment": "",
+        "columnIds": [
+          "col_3_000",
+          "col_3_001",
+          "col_3_002",
+          "col_3_003",
+          "col_3_004",
+          "col_3_005"
+        ],
+        "seqColumnIds": [
+          "col_3_000",
+          "col_3_001",
+          "col_3_002",
+          "col_3_003",
+          "col_3_004",
+          "col_3_005"
+        ],
+        "ui": {
+          "x": 1264.436,
+          "y": 1164.7078,
+          "zIndex": 4,
+          "widthName": 60,
+          "widthComment": 60,
+          "color": ""
+        },
+        "meta": {
+          "updateAt": 1755566738315,
+          "createAt": 1755053793440
+        }
+      },
+      "tbl_004": {
+        "id": "tbl_004",
+        "name": "user_quotas",
+        "comment": "",
+        "columnIds": [
+          "col_4_000",
+          "col_4_001",
+          "col_4_002",
+          "col_4_003"
+        ],
+        "seqColumnIds": [
+          "col_4_000",
+          "col_4_001",
+          "col_4_002",
+          "col_4_003"
+        ],
+        "ui": {
+          "x": 354.3777,
+          "y": 1020.5103,
+          "zIndex": 5,
+          "widthName": 65,
+          "widthComment": 60,
+          "color": ""
+        },
+        "meta": {
+          "updateAt": 1755483034513,
+          "createAt": 1755053793440
+        }
+      },
+      "tbl_005": {
+        "id": "tbl_005",
+        "name": "plans",
+        "comment": "",
+        "columnIds": [
+          "col_5_000",
+          "col_5_001",
+          "col_5_002",
+          "col_5_003",
+          "col_5_004"
+        ],
+        "seqColumnIds": [
+          "col_5_000",
+          "col_5_001",
+          "col_5_002",
+          "col_5_003",
+          "col_5_004"
+        ],
+        "ui": {
+          "x": 2204.4071,
+          "y": 1156.7842,
+          "zIndex": 6,
+          "widthName": 60,
+          "widthComment": 60,
+          "color": ""
+        },
+        "meta": {
+          "updateAt": 1755566240919,
+          "createAt": 1755053793440
+        }
+      },
+      "tbl_006": {
+        "id": "tbl_006",
+        "name": "plan_entitlements",
+        "comment": "",
+        "columnIds": [
+          "col_6_000",
+          "col_6_001",
+          "col_6_002"
+        ],
+        "seqColumnIds": [
+          "col_6_000",
+          "col_6_001",
+          "col_6_002",
+          "IlIvK49UyB3VMx1JhI_PB"
+        ],
+        "ui": {
+          "x": 1512.5471,
+          "y": 1591.4486,
+          "zIndex": 7,
+          "widthName": 96,
+          "widthComment": 60,
+          "color": ""
+        },
+        "meta": {
+          "updateAt": 1755566704162,
+          "createAt": 1755053793440
+        }
+      },
+      "tbl_007": {
+        "id": "tbl_007",
+        "name": "subscriptions",
+        "comment": "",
+        "columnIds": [
+          "col_7_000",
+          "col_7_001",
+          "col_7_002",
+          "col_7_003",
+          "col_7_004",
+          "col_7_005",
+          "col_7_006",
+          "tUVuvvxbjQLK5lJ3uKchC"
+        ],
+        "seqColumnIds": [
+          "col_7_000",
+          "col_7_001",
+          "col_7_002",
+          "col_7_003",
+          "col_7_004",
+          "col_7_005",
+          "col_7_006",
+          "tUVuvvxbjQLK5lJ3uKchC"
+        ],
+        "ui": {
+          "x": 1600.4176,
+          "y": 315.1645,
+          "zIndex": 8,
+          "widthName": 72,
+          "widthComment": 60,
+          "color": ""
+        },
+        "meta": {
+          "updateAt": 1755055680690,
+          "createAt": 1755053793440
+        }
+      },
+      "tbl_008": {
+        "id": "tbl_008",
+        "name": "usage_counters",
+        "comment": "",
+        "columnIds": [
+          "col_8_000",
+          "col_8_001",
+          "Tw79cLpXLm54t3Py-ZlS8",
+          "col_8_002"
+        ],
+        "seqColumnIds": [
+          "col_8_000",
+          "col_8_001",
+          "Tw79cLpXLm54t3Py-ZlS8",
+          "col_8_002"
+        ],
+        "ui": {
+          "x": 43.5885,
+          "y": 837.5296,
+          "zIndex": 9,
+          "widthName": 84,
+          "widthComment": 60,
+          "color": ""
+        },
+        "meta": {
+          "updateAt": 1755055264261,
+          "createAt": 1755053793440
+        }
+      },
+      "tbl_009": {
+        "id": "tbl_009",
+        "name": "invoices",
+        "comment": "",
+        "columnIds": [
+          "col_9_000",
+          "col_9_001",
+          "col_9_002",
+          "col_9_003",
+          "col_9_004",
+          "col_9_005",
+          "col_9_006",
+          "col_9_007",
+          "col_9_008",
+          "col_9_009",
+          "col_9_010",
+          "col_9_011"
+        ],
+        "seqColumnIds": [
+          "col_9_000",
+          "col_9_001",
+          "col_9_002",
+          "col_9_003",
+          "col_9_004",
+          "col_9_005",
+          "col_9_006",
+          "col_9_007",
+          "col_9_008",
+          "col_9_009",
+          "col_9_010",
+          "col_9_011"
+        ],
+        "ui": {
+          "x": 685.1461,
+          "y": 1357.7516,
+          "zIndex": 10,
+          "widthName": 60,
+          "widthComment": 60,
+          "color": ""
+        },
+        "meta": {
+          "updateAt": 1755055702793,
+          "createAt": 1755053793440
+        }
+      },
+      "tbl_010": {
+        "id": "tbl_010",
+        "name": "payments",
+        "comment": "",
+        "columnIds": [
+          "col_10_000",
+          "col_10_001",
+          "col_10_002",
+          "col_10_003",
+          "col_10_004",
+          "col_10_005",
+          "col_10_006"
+        ],
+        "seqColumnIds": [
+          "col_10_000",
+          "col_10_001",
+          "col_10_002",
+          "col_10_003",
+          "col_10_004",
+          "col_10_005",
+          "col_10_006"
+        ],
+        "ui": {
+          "x": 19.5892,
+          "y": 1412.314,
+          "zIndex": 11,
+          "widthName": 60,
+          "widthComment": 60,
+          "color": ""
+        },
+        "meta": {
+          "updateAt": 1755566948777,
+          "createAt": 1755053793440
+        }
+      }
+    },
+    "tableColumnEntities": {
+      "col_0_000": {
+        "id": "col_0_000",
+        "tableId": "tbl_000",
+        "name": "id",
+        "comment": "",
+        "dataType": "UUID",
+        "default": "",
+        "options": 10,
+        "ui": {
+          "keys": 1,
+          "widthName": 60,
+          "widthComment": 60,
+          "widthDataType": 60,
+          "widthDefault": 60
+        },
+        "meta": {
+          "updateAt": 1755053793440,
+          "createAt": 1755053793440
+        }
+      },
+      "col_0_001": {
+        "id": "col_0_001",
+        "tableId": "tbl_000",
+        "name": "auth_sub",
+        "comment": "",
+        "dataType": "TEXT",
+        "default": "",
+        "options": 8,
+        "ui": {
+          "keys": 0,
+          "widthName": 60,
+          "widthComment": 60,
+          "widthDataType": 60,
+          "widthDefault": 60
+        },
+        "meta": {
+          "updateAt": 1755053793440,
+          "createAt": 1755053793440
+        }
+      },
+      "col_0_002": {
+        "id": "col_0_002",
+        "tableId": "tbl_000",
+        "name": "email",
+        "comment": "",
+        "dataType": "TEXT",
+        "default": "",
+        "options": 8,
+        "ui": {
+          "keys": 0,
+          "widthName": 60,
+          "widthComment": 60,
+          "widthDataType": 60,
+          "widthDefault": 60
+        },
+        "meta": {
+          "updateAt": 1755053793440,
+          "createAt": 1755053793440
+        }
+      },
+      "col_0_003": {
+        "id": "col_0_003",
+        "tableId": "tbl_000",
+        "name": "role",
+        "comment": "user|admin",
+        "dataType": "TEXT",
+        "default": "",
+        "options": 8,
+        "ui": {
+          "keys": 0,
+          "widthName": 60,
+          "widthComment": 60,
+          "widthDataType": 60,
+          "widthDefault": 60
+        },
+        "meta": {
+          "updateAt": 1755055299173,
+          "createAt": 1755053793440
+        }
+      },
+      "col_0_004": {
+        "id": "col_0_004",
+        "tableId": "tbl_000",
+        "name": "created_at",
+        "comment": "",
+        "dataType": "DATETIME",
+        "default": "",
+        "options": 8,
+        "ui": {
+          "keys": 0,
+          "widthName": 60,
+          "widthComment": 60,
+          "widthDataType": 60,
+          "widthDefault": 60
+        },
+        "meta": {
+          "updateAt": 1755053793440,
+          "createAt": 1755053793440
+        }
+      },
+      "col_1_000": {
+        "id": "col_1_000",
+        "tableId": "tbl_001",
+        "name": "id",
+        "comment": "",
+        "dataType": "UUID",
+        "default": "",
+        "options": 10,
+        "ui": {
+          "keys": 1,
+          "widthName": 60,
+          "widthComment": 60,
+          "widthDataType": 60,
+          "widthDefault": 60
+        },
+        "meta": {
+          "updateAt": 1755053793440,
+          "createAt": 1755053793440
+        }
+      },
+      "col_1_001": {
+        "id": "col_1_001",
+        "tableId": "tbl_001",
+        "name": "user_id",
+        "comment": "",
+        "dataType": "UUID",
+        "default": "",
+        "options": 8,
+        "ui": {
+          "keys": 2,
+          "widthName": 60,
+          "widthComment": 60,
+          "widthDataType": 60,
+          "widthDefault": 60
+        },
+        "meta": {
+          "updateAt": 1755053793440,
+          "createAt": 1755053793440
+        }
+      },
+      "col_1_002": {
+        "id": "col_1_002",
+        "tableId": "tbl_001",
+        "name": "type",
+        "comment": "'IMAGE','VIDEO'",
+        "dataType": "MEDIA_TYPE",
+        "default": "",
+        "options": 8,
+        "ui": {
+          "keys": 0,
+          "widthName": 60,
+          "widthComment": 86,
+          "widthDataType": 69,
+          "widthDefault": 60
+        },
+        "meta": {
+          "updateAt": 1755055315003,
+          "createAt": 1755053793440
+        }
+      },
+      "col_1_003": {
+        "id": "col_1_003",
+        "tableId": "tbl_001",
+        "name": "bucket",
+        "comment": "",
+        "dataType": "TEXT",
+        "default": "",
+        "options": 8,
+        "ui": {
+          "keys": 0,
+          "widthName": 60,
+          "widthComment": 60,
+          "widthDataType": 60,
+          "widthDefault": 60
+        },
+        "meta": {
+          "updateAt": 1755053793440,
+          "createAt": 1755053793440
+        }
+      },
+      "col_1_004": {
+        "id": "col_1_004",
+        "tableId": "tbl_001",
+        "name": "object_key",
+        "comment": "",
+        "dataType": "TEXT",
+        "default": "",
+        "options": 8,
+        "ui": {
+          "keys": 0,
+          "widthName": 60,
+          "widthComment": 60,
+          "widthDataType": 60,
+          "widthDefault": 60
+        },
+        "meta": {
+          "updateAt": 1755053793440,
+          "createAt": 1755053793440
+        }
+      },
+      "col_1_005": {
+        "id": "col_1_005",
+        "tableId": "tbl_001",
+        "name": "mime_type",
+        "comment": "",
+        "dataType": "TEXT",
+        "default": "",
+        "options": 8,
+        "ui": {
+          "keys": 0,
+          "widthName": 60,
+          "widthComment": 60,
+          "widthDataType": 60,
+          "widthDefault": 60
+        },
+        "meta": {
+          "updateAt": 1755053793440,
+          "createAt": 1755053793440
+        }
+      },
+      "col_1_006": {
+        "id": "col_1_006",
+        "tableId": "tbl_001",
+        "name": "size_bytes",
+        "comment": "",
+        "dataType": "BIGINT",
+        "default": "",
+        "options": 8,
+        "ui": {
+          "keys": 0,
+          "widthName": 60,
+          "widthComment": 60,
+          "widthDataType": 60,
+          "widthDefault": 60
+        },
+        "meta": {
+          "updateAt": 1755053793440,
+          "createAt": 1755053793440
+        }
+      },
+      "col_1_007": {
+        "id": "col_1_007",
+        "tableId": "tbl_001",
+        "name": "width",
+        "comment": "",
+        "dataType": "INTEGER",
+        "default": "",
+        "options": 8,
+        "ui": {
+          "keys": 0,
+          "widthName": 60,
+          "widthComment": 60,
+          "widthDataType": 60,
+          "widthDefault": 60
+        },
+        "meta": {
+          "updateAt": 1755053793440,
+          "createAt": 1755053793440
+        }
+      },
+      "col_1_008": {
+        "id": "col_1_008",
+        "tableId": "tbl_001",
+        "name": "height",
+        "comment": "",
+        "dataType": "INTEGER",
+        "default": "",
+        "options": 8,
+        "ui": {
+          "keys": 0,
+          "widthName": 60,
+          "widthComment": 60,
+          "widthDataType": 60,
+          "widthDefault": 60
+        },
+        "meta": {
+          "updateAt": 1755053793440,
+          "createAt": 1755053793440
+        }
+      },
+      "col_1_009": {
+        "id": "col_1_009",
+        "tableId": "tbl_001",
+        "name": "duration_sec",
+        "comment": "",
+        "dataType": "INTEGER",
+        "default": "",
+        "options": 8,
+        "ui": {
+          "keys": 0,
+          "widthName": 69,
+          "widthComment": 60,
+          "widthDataType": 60,
+          "widthDefault": 60
+        },
+        "meta": {
+          "updateAt": 1755053793440,
+          "createAt": 1755053793440
+        }
+      },
+      "col_1_010": {
+        "id": "col_1_010",
+        "tableId": "tbl_001",
+        "name": "sha256",
+        "comment": "",
+        "dataType": "TEXT",
+        "default": "",
+        "options": 8,
+        "ui": {
+          "keys": 0,
+          "widthName": 60,
+          "widthComment": 60,
+          "widthDataType": 60,
+          "widthDefault": 60
+        },
+        "meta": {
+          "updateAt": 1755053793440,
+          "createAt": 1755053793440
+        }
+      },
+      "col_1_011": {
+        "id": "col_1_011",
+        "tableId": "tbl_001",
+        "name": "created_at",
+        "comment": "",
+        "dataType": "DATETIME",
+        "default": "",
+        "options": 8,
+        "ui": {
+          "keys": 0,
+          "widthName": 60,
+          "widthComment": 60,
+          "widthDataType": 60,
+          "widthDefault": 60
+        },
+        "meta": {
+          "updateAt": 1755053793440,
+          "createAt": 1755053793440
+        }
+      },
+      "col_2_000": {
+        "id": "col_2_000",
+        "tableId": "tbl_002",
+        "name": "id",
+        "comment": "",
+        "dataType": "TEXT",
+        "default": "",
+        "options": 10,
+        "ui": {
+          "keys": 1,
+          "widthName": 60,
+          "widthComment": 60,
+          "widthDataType": 60,
+          "widthDefault": 60
+        },
+        "meta": {
+          "updateAt": 1755053793440,
+          "createAt": 1755053793440
+        }
+      },
+      "col_2_001": {
+        "id": "col_2_001",
+        "tableId": "tbl_002",
+        "name": "user_id",
+        "comment": "",
+        "dataType": "UUID",
+        "default": "",
+        "options": 8,
+        "ui": {
+          "keys": 2,
+          "widthName": 60,
+          "widthComment": 60,
+          "widthDataType": 60,
+          "widthDefault": 60
+        },
+        "meta": {
+          "updateAt": 1755053793440,
+          "createAt": 1755053793440
+        }
+      },
+      "col_2_002": {
+        "id": "col_2_002",
+        "tableId": "tbl_002",
+        "name": "job_type",
+        "comment": "'IMAGE_SWAP','VIDEO_SWAP'",
+        "dataType": "JOB_TYPE",
+        "default": "",
+        "options": 8,
+        "ui": {
+          "keys": 0,
+          "widthName": 60,
+          "widthComment": 159,
+          "widthDataType": 60,
+          "widthDefault": 60
+        },
+        "meta": {
+          "updateAt": 1755055326037,
+          "createAt": 1755053793440
+        }
+      },
+      "col_2_003": {
+        "id": "col_2_003",
+        "tableId": "tbl_002",
+        "name": "source_asset_id",
+        "comment": "",
+        "dataType": "UUID",
+        "default": "",
+        "options": 8,
+        "ui": {
+          "keys": 2,
+          "widthName": 83,
+          "widthComment": 60,
+          "widthDataType": 60,
+          "widthDefault": 60
+        },
+        "meta": {
+          "updateAt": 1755053793440,
+          "createAt": 1755053793440
+        }
+      },
+      "col_2_004": {
+        "id": "col_2_004",
+        "tableId": "tbl_002",
+        "name": "target_asset_id",
+        "comment": "",
+        "dataType": "UUID",
+        "default": "",
+        "options": 8,
+        "ui": {
+          "keys": 2,
+          "widthName": 80,
+          "widthComment": 60,
+          "widthDataType": 60,
+          "widthDefault": 60
+        },
+        "meta": {
+          "updateAt": 1755053793440,
+          "createAt": 1755053793440
+        }
+      },
+      "col_2_005": {
+        "id": "col_2_005",
+        "tableId": "tbl_002",
+        "name": "status",
+        "comment": "'QUEUED','RUNNING','SUCCEEDED','FAILED'",
+        "dataType": "JOB_STATUS",
+        "default": "",
+        "options": 8,
+        "ui": {
+          "keys": 0,
+          "widthName": 60,
+          "widthComment": 232,
+          "widthDataType": 67,
+          "widthDefault": 60
+        },
+        "meta": {
+          "updateAt": 1755055334574,
+          "createAt": 1755053793440
+        }
+      },
+      "col_2_006": {
+        "id": "col_2_006",
+        "tableId": "tbl_002",
+        "name": "progress_pct",
+        "comment": "",
+        "dataType": "INTEGER",
+        "default": "",
+        "options": 8,
+        "ui": {
+          "keys": 0,
+          "widthName": 70,
+          "widthComment": 60,
+          "widthDataType": 60,
+          "widthDefault": 60
+        },
+        "meta": {
+          "updateAt": 1755053793440,
+          "createAt": 1755053793440
+        }
+      },
+      "col_2_007": {
+        "id": "col_2_007",
+        "tableId": "tbl_002",
+        "name": "output_asset_id",
+        "comment": "",
+        "dataType": "UUID",
+        "default": "",
+        "options": 8,
+        "ui": {
+          "keys": 2,
+          "widthName": 84,
+          "widthComment": 60,
+          "widthDataType": 60,
+          "widthDefault": 60
+        },
+        "meta": {
+          "updateAt": 1755053793440,
+          "createAt": 1755053793440
+        }
+      },
+      "col_2_008": {
+        "id": "col_2_008",
+        "tableId": "tbl_002",
+        "name": "error_code",
+        "comment": "",
+        "dataType": "TEXT",
+        "default": "",
+        "options": 8,
+        "ui": {
+          "keys": 0,
+          "widthName": 60,
+          "widthComment": 60,
+          "widthDataType": 60,
+          "widthDefault": 60
+        },
+        "meta": {
+          "updateAt": 1755053793440,
+          "createAt": 1755053793440
+        }
+      },
+      "col_2_009": {
+        "id": "col_2_009",
+        "tableId": "tbl_002",
+        "name": "error_message",
+        "comment": "",
+        "dataType": "TEXT",
+        "default": "",
+        "options": 8,
+        "ui": {
+          "keys": 0,
+          "widthName": 79,
+          "widthComment": 60,
+          "widthDataType": 60,
+          "widthDefault": 60
+        },
+        "meta": {
+          "updateAt": 1755053793440,
+          "createAt": 1755053793440
+        }
+      },
+      "col_2_010": {
+        "id": "col_2_010",
+        "tableId": "tbl_002",
+        "name": "idempotency_key",
+        "comment": "",
+        "dataType": "TEXT",
+        "default": "",
+        "options": 8,
+        "ui": {
+          "keys": 0,
+          "widthName": 94,
+          "widthComment": 60,
+          "widthDataType": 60,
+          "widthDefault": 60
+        },
+        "meta": {
+          "updateAt": 1755053793440,
+          "createAt": 1755053793440
+        }
+      },
+      "col_2_011": {
+        "id": "col_2_011",
+        "tableId": "tbl_002",
+        "name": "created_at",
+        "comment": "",
+        "dataType": "DATETIME",
+        "default": "",
+        "options": 8,
+        "ui": {
+          "keys": 0,
+          "widthName": 60,
+          "widthComment": 60,
+          "widthDataType": 60,
+          "widthDefault": 60
+        },
+        "meta": {
+          "updateAt": 1755053793440,
+          "createAt": 1755053793440
+        }
+      },
+      "col_2_012": {
+        "id": "col_2_012",
+        "tableId": "tbl_002",
+        "name": "started_at",
+        "comment": "",
+        "dataType": "DATETIME",
+        "default": "",
+        "options": 8,
+        "ui": {
+          "keys": 0,
+          "widthName": 60,
+          "widthComment": 60,
+          "widthDataType": 60,
+          "widthDefault": 60
+        },
+        "meta": {
+          "updateAt": 1755053793440,
+          "createAt": 1755053793440
+        }
+      },
+      "col_2_013": {
+        "id": "col_2_013",
+        "tableId": "tbl_002",
+        "name": "finished_at",
+        "comment": "",
+        "dataType": "DATETIME",
+        "default": "",
+        "options": 8,
+        "ui": {
+          "keys": 0,
+          "widthName": 60,
+          "widthComment": 60,
+          "widthDataType": 60,
+          "widthDefault": 60
+        },
+        "meta": {
+          "updateAt": 1755053793440,
+          "createAt": 1755053793440
+        }
+      },
+      "col_3_000": {
+        "id": "col_3_000",
+        "tableId": "tbl_003",
+        "name": "id",
+        "comment": "",
+        "dataType": "BIGSERIAL",
+        "default": "",
+        "options": 10,
+        "ui": {
+          "keys": 1,
+          "widthName": 60,
+          "widthComment": 60,
+          "widthDataType": 60,
+          "widthDefault": 60
+        },
+        "meta": {
+          "updateAt": 1755053793440,
+          "createAt": 1755053793440
+        }
+      },
+      "col_3_001": {
+        "id": "col_3_001",
+        "tableId": "tbl_003",
+        "name": "job_id",
+        "comment": "",
+        "dataType": "TEXT",
+        "default": "",
+        "options": 8,
+        "ui": {
+          "keys": 2,
+          "widthName": 60,
+          "widthComment": 60,
+          "widthDataType": 60,
+          "widthDefault": 60
+        },
+        "meta": {
+          "updateAt": 1755053793440,
+          "createAt": 1755053793440
+        }
+      },
+      "col_3_002": {
+        "id": "col_3_002",
+        "tableId": "tbl_003",
+        "name": "from_status",
+        "comment": "",
+        "dataType": "JOB_STATUS",
+        "default": "",
+        "options": 8,
+        "ui": {
+          "keys": 0,
+          "widthName": 63,
+          "widthComment": 60,
+          "widthDataType": 67,
+          "widthDefault": 60
+        },
+        "meta": {
+          "updateAt": 1755053793440,
+          "createAt": 1755053793440
+        }
+      },
+      "col_3_003": {
+        "id": "col_3_003",
+        "tableId": "tbl_003",
+        "name": "to_status",
+        "comment": "",
+        "dataType": "JOB_STATUS",
+        "default": "",
+        "options": 8,
+        "ui": {
+          "keys": 0,
+          "widthName": 60,
+          "widthComment": 60,
+          "widthDataType": 67,
+          "widthDefault": 60
+        },
+        "meta": {
+          "updateAt": 1755053793440,
+          "createAt": 1755053793440
+        }
+      },
+      "col_3_004": {
+        "id": "col_3_004",
+        "tableId": "tbl_003",
+        "name": "message",
+        "comment": "",
+        "dataType": "TEXT",
+        "default": "",
+        "options": 8,
+        "ui": {
+          "keys": 0,
+          "widthName": 60,
+          "widthComment": 60,
+          "widthDataType": 60,
+          "widthDefault": 60
+        },
+        "meta": {
+          "updateAt": 1755053793440,
+          "createAt": 1755053793440
+        }
+      },
+      "col_3_005": {
+        "id": "col_3_005",
+        "tableId": "tbl_003",
+        "name": "created_at",
+        "comment": "",
+        "dataType": "DATETIME",
+        "default": "",
+        "options": 8,
+        "ui": {
+          "keys": 0,
+          "widthName": 60,
+          "widthComment": 60,
+          "widthDataType": 60,
+          "widthDefault": 60
+        },
+        "meta": {
+          "updateAt": 1755053793440,
+          "createAt": 1755053793440
+        }
+      },
+      "col_4_000": {
+        "id": "col_4_000",
+        "tableId": "tbl_004",
+        "name": "user_id",
+        "comment": "",
+        "dataType": "UUID",
+        "default": "",
+        "options": 10,
+        "ui": {
+          "keys": 2,
+          "widthName": 60,
+          "widthComment": 60,
+          "widthDataType": 60,
+          "widthDefault": 60
+        },
+        "meta": {
+          "updateAt": 1755053793440,
+          "createAt": 1755053793440
+        }
+      },
+      "col_4_001": {
+        "id": "col_4_001",
+        "tableId": "tbl_004",
+        "name": "daily_limit",
+        "comment": "",
+        "dataType": "INTEGER",
+        "default": "",
+        "options": 8,
+        "ui": {
+          "keys": 0,
+          "widthName": 60,
+          "widthComment": 60,
+          "widthDataType": 60,
+          "widthDefault": 60
+        },
+        "meta": {
+          "updateAt": 1755053793440,
+          "createAt": 1755053793440
+        }
+      },
+      "col_4_002": {
+        "id": "col_4_002",
+        "tableId": "tbl_004",
+        "name": "used_today",
+        "comment": "",
+        "dataType": "INTEGER",
+        "default": "",
+        "options": 8,
+        "ui": {
+          "keys": 0,
+          "widthName": 62,
+          "widthComment": 60,
+          "widthDataType": 60,
+          "widthDefault": 60
+        },
+        "meta": {
+          "updateAt": 1755053793440,
+          "createAt": 1755053793440
+        }
+      },
+      "col_4_003": {
+        "id": "col_4_003",
+        "tableId": "tbl_004",
+        "name": "reset_at",
+        "comment": "",
+        "dataType": "DATETIME",
+        "default": "",
+        "options": 8,
+        "ui": {
+          "keys": 0,
+          "widthName": 60,
+          "widthComment": 60,
+          "widthDataType": 60,
+          "widthDefault": 60
+        },
+        "meta": {
+          "updateAt": 1755053793440,
+          "createAt": 1755053793440
+        }
+      },
+      "col_5_000": {
+        "id": "col_5_000",
+        "tableId": "tbl_005",
+        "name": "id",
+        "comment": "",
+        "dataType": "SERIAL",
+        "default": "",
+        "options": 10,
+        "ui": {
+          "keys": 1,
+          "widthName": 60,
+          "widthComment": 60,
+          "widthDataType": 60,
+          "widthDefault": 60
+        },
+        "meta": {
+          "updateAt": 1755053793440,
+          "createAt": 1755053793440
+        }
+      },
+      "col_5_001": {
+        "id": "col_5_001",
+        "tableId": "tbl_005",
+        "name": "code",
+        "comment": "",
+        "dataType": "TEXT",
+        "default": "",
+        "options": 8,
+        "ui": {
+          "keys": 0,
+          "widthName": 60,
+          "widthComment": 60,
+          "widthDataType": 60,
+          "widthDefault": 60
+        },
+        "meta": {
+          "updateAt": 1755053793440,
+          "createAt": 1755053793440
+        }
+      },
+      "col_5_002": {
+        "id": "col_5_002",
+        "tableId": "tbl_005",
+        "name": "BUSINESS",
+        "comment": "",
+        "dataType": "NAME",
+        "default": "",
+        "options": 8,
+        "ui": {
+          "keys": 0,
+          "widthName": 60,
+          "widthComment": 60,
+          "widthDataType": 60,
+          "widthDefault": 60
+        },
+        "meta": {
+          "updateAt": 1755053793440,
+          "createAt": 1755053793440
+        }
+      },
+      "col_5_003": {
+        "id": "col_5_003",
+        "tableId": "tbl_005",
+        "name": "priority",
+        "comment": "",
+        "dataType": "INTEGER",
+        "default": "",
+        "options": 8,
+        "ui": {
+          "keys": 0,
+          "widthName": 60,
+          "widthComment": 60,
+          "widthDataType": 60,
+          "widthDefault": 60
+        },
+        "meta": {
+          "updateAt": 1755053793440,
+          "createAt": 1755053793440
+        }
+      },
+      "col_5_004": {
+        "id": "col_5_004",
+        "tableId": "tbl_005",
+        "name": "created_at",
+        "comment": "",
+        "dataType": "DATETIME",
+        "default": "",
+        "options": 8,
+        "ui": {
+          "keys": 0,
+          "widthName": 60,
+          "widthComment": 60,
+          "widthDataType": 60,
+          "widthDefault": 60
+        },
+        "meta": {
+          "updateAt": 1755053793440,
+          "createAt": 1755053793440
+        }
+      },
+      "col_6_000": {
+        "id": "col_6_000",
+        "tableId": "tbl_006",
+        "name": "plan_id",
+        "comment": "",
+        "dataType": "INTEGER",
+        "default": "",
+        "options": 8,
+        "ui": {
+          "keys": 2,
+          "widthName": 60,
+          "widthComment": 60,
+          "widthDataType": 60,
+          "widthDefault": 60
+        },
+        "meta": {
+          "updateAt": 1755053793440,
+          "createAt": 1755053793440
+        }
+      },
+      "col_6_001": {
+        "id": "col_6_001",
+        "tableId": "tbl_006",
+        "name": "version",
+        "comment": "",
+        "dataType": "INTEGER",
+        "default": "",
+        "options": 8,
+        "ui": {
+          "keys": 0,
+          "widthName": 60,
+          "widthComment": 60,
+          "widthDataType": 60,
+          "widthDefault": 60
+        },
+        "meta": {
+          "updateAt": 1755053793440,
+          "createAt": 1755053793440
+        }
+      },
+      "col_6_002": {
+        "id": "col_6_002",
+        "tableId": "tbl_006",
+        "name": "entitlements",
+        "comment": "{\"daily_jobs\":50,\"max_video_sec\":120,\"max_resolution\":\"1080p\",\"concurrency\":1,\"watermark\":true}",
+        "dataType": "JSONB",
+        "default": "",
+        "options": 8,
+        "ui": {
+          "keys": 0,
+          "widthName": 68,
+          "widthComment": 512,
+          "widthDataType": 60,
+          "widthDefault": 60
+        },
+        "meta": {
+          "updateAt": 1755055638594,
+          "createAt": 1755053793440
+        }
+      },
+      "col_7_000": {
+        "id": "col_7_000",
+        "tableId": "tbl_007",
+        "name": "id",
+        "comment": "",
+        "dataType": "UUID",
+        "default": "",
+        "options": 10,
+        "ui": {
+          "keys": 1,
+          "widthName": 60,
+          "widthComment": 60,
+          "widthDataType": 60,
+          "widthDefault": 60
+        },
+        "meta": {
+          "updateAt": 1755053793440,
+          "createAt": 1755053793440
+        }
+      },
+      "col_7_001": {
+        "id": "col_7_001",
+        "tableId": "tbl_007",
+        "name": "user_id",
+        "comment": "",
+        "dataType": "UUID",
+        "default": "",
+        "options": 8,
+        "ui": {
+          "keys": 2,
+          "widthName": 60,
+          "widthComment": 60,
+          "widthDataType": 60,
+          "widthDefault": 60
+        },
+        "meta": {
+          "updateAt": 1755053793440,
+          "createAt": 1755053793440
+        }
+      },
+      "col_7_002": {
+        "id": "col_7_002",
+        "tableId": "tbl_007",
+        "name": "plan_id",
+        "comment": "",
+        "dataType": "INTEGER",
+        "default": "",
+        "options": 8,
+        "ui": {
+          "keys": 2,
+          "widthName": 60,
+          "widthComment": 60,
+          "widthDataType": 60,
+          "widthDefault": 60
+        },
+        "meta": {
+          "updateAt": 1755053793440,
+          "createAt": 1755053793440
+        }
+      },
+      "col_7_003": {
+        "id": "col_7_003",
+        "tableId": "tbl_007",
+        "name": "status",
+        "comment": "'ACTIVE','CANCELLED','PAST_DUE'",
+        "dataType": "SUBSCRIPTION_STATUS",
+        "default": "",
+        "options": 8,
+        "ui": {
+          "keys": 0,
+          "widthName": 60,
+          "widthComment": 179,
+          "widthDataType": 127,
+          "widthDefault": 60
+        },
+        "meta": {
+          "updateAt": 1755055351928,
+          "createAt": 1755053793440
+        }
+      },
+      "col_7_004": {
+        "id": "col_7_004",
+        "tableId": "tbl_007",
+        "name": "current_start",
+        "comment": "",
+        "dataType": "DATETIME",
+        "default": "",
+        "options": 8,
+        "ui": {
+          "keys": 0,
+          "widthName": 68,
+          "widthComment": 60,
+          "widthDataType": 60,
+          "widthDefault": 60
+        },
+        "meta": {
+          "updateAt": 1755053793440,
+          "createAt": 1755053793440
+        }
+      },
+      "col_7_005": {
+        "id": "col_7_005",
+        "tableId": "tbl_007",
+        "name": "current_end",
+        "comment": "",
+        "dataType": "DATETIME",
+        "default": "",
+        "options": 8,
+        "ui": {
+          "keys": 0,
+          "widthName": 65,
+          "widthComment": 60,
+          "widthDataType": 60,
+          "widthDefault": 60
+        },
+        "meta": {
+          "updateAt": 1755053793440,
+          "createAt": 1755053793440
+        }
+      },
+      "col_7_006": {
+        "id": "col_7_006",
+        "tableId": "tbl_007",
+        "name": "billing_ref",
+        "comment": "",
+        "dataType": "TEXT",
+        "default": "",
+        "options": 8,
+        "ui": {
+          "keys": 0,
+          "widthName": 60,
+          "widthComment": 60,
+          "widthDataType": 60,
+          "widthDefault": 60
+        },
+        "meta": {
+          "updateAt": 1755053793440,
+          "createAt": 1755053793440
+        }
+      },
+      "col_8_000": {
+        "id": "col_8_000",
+        "tableId": "tbl_008",
+        "name": "user_id",
+        "comment": "",
+        "dataType": "UUID",
+        "default": "",
+        "options": 10,
+        "ui": {
+          "keys": 2,
+          "widthName": 60,
+          "widthComment": 60,
+          "widthDataType": 60,
+          "widthDefault": 60
+        },
+        "meta": {
+          "updateAt": 1755053793440,
+          "createAt": 1755053793440
+        }
+      },
+      "col_8_001": {
+        "id": "col_8_001",
+        "tableId": "tbl_008",
+        "name": "period_start",
+        "comment": "",
+        "dataType": "DATE",
+        "default": "",
+        "options": 10,
+        "ui": {
+          "keys": 1,
+          "widthName": 65,
+          "widthComment": 60,
+          "widthDataType": 60,
+          "widthDefault": 60
+        },
+        "meta": {
+          "updateAt": 1755053793440,
+          "createAt": 1755053793440
+        }
+      },
+      "col_8_002": {
+        "id": "col_8_002",
+        "tableId": "tbl_008",
+        "name": "jobs_total",
+        "comment": "",
+        "dataType": "INTEGER",
+        "default": "",
+        "options": 8,
+        "ui": {
+          "keys": 0,
+          "widthName": 60,
+          "widthComment": 60,
+          "widthDataType": 60,
+          "widthDefault": 60
+        },
+        "meta": {
+          "updateAt": 1755053793440,
+          "createAt": 1755053793440
+        }
+      },
+      "col_9_000": {
+        "id": "col_9_000",
+        "tableId": "tbl_009",
+        "name": "id",
+        "comment": "",
+        "dataType": "UUID",
+        "default": "",
+        "options": 10,
+        "ui": {
+          "keys": 1,
+          "widthName": 60,
+          "widthComment": 60,
+          "widthDataType": 60,
+          "widthDefault": 60
+        },
+        "meta": {
+          "updateAt": 1755053793440,
+          "createAt": 1755053793440
+        }
+      },
+      "col_9_001": {
+        "id": "col_9_001",
+        "tableId": "tbl_009",
+        "name": "user_id",
+        "comment": "",
+        "dataType": "UUID",
+        "default": "",
+        "options": 8,
+        "ui": {
+          "keys": 2,
+          "widthName": 60,
+          "widthComment": 60,
+          "widthDataType": 60,
+          "widthDefault": 60
+        },
+        "meta": {
+          "updateAt": 1755053793440,
+          "createAt": 1755053793440
+        }
+      },
+      "col_9_002": {
+        "id": "col_9_002",
+        "tableId": "tbl_009",
+        "name": "plan_id",
+        "comment": "",
+        "dataType": "INTEGER",
+        "default": "",
+        "options": 8,
+        "ui": {
+          "keys": 2,
+          "widthName": 60,
+          "widthComment": 60,
+          "widthDataType": 60,
+          "widthDefault": 60
+        },
+        "meta": {
+          "updateAt": 1755053793440,
+          "createAt": 1755053793440
+        }
+      },
+      "col_9_003": {
+        "id": "col_9_003",
+        "tableId": "tbl_009",
+        "name": "amount_idr",
+        "comment": "",
+        "dataType": "BIGINT",
+        "default": "",
+        "options": 8,
+        "ui": {
+          "keys": 0,
+          "widthName": 62,
+          "widthComment": 60,
+          "widthDataType": 60,
+          "widthDefault": 60
+        },
+        "meta": {
+          "updateAt": 1755053793440,
+          "createAt": 1755053793440
+        }
+      },
+      "col_9_004": {
+        "id": "col_9_004",
+        "tableId": "tbl_009",
+        "name": "description",
+        "comment": "",
+        "dataType": "TEXT",
+        "default": "",
+        "options": 8,
+        "ui": {
+          "keys": 0,
+          "widthName": 61,
+          "widthComment": 60,
+          "widthDataType": 60,
+          "widthDefault": 60
+        },
+        "meta": {
+          "updateAt": 1755053793440,
+          "createAt": 1755053793440
+        }
+      },
+      "col_9_005": {
+        "id": "col_9_005",
+        "tableId": "tbl_009",
+        "name": "status",
+        "comment": "'PENDING','PAID','EXPIRED','CANCELLED'",
+        "dataType": "INVOICE_STATUS",
+        "default": "",
+        "options": 8,
+        "ui": {
+          "keys": 0,
+          "widthName": 60,
+          "widthComment": 216,
+          "widthDataType": 92,
+          "widthDefault": 60
+        },
+        "meta": {
+          "updateAt": 1755055534457,
+          "createAt": 1755053793440
+        }
+      },
+      "col_9_006": {
+        "id": "col_9_006",
+        "tableId": "tbl_009",
+        "name": "gateway",
+        "comment": "",
+        "dataType": "TEXT",
+        "default": "",
+        "options": 8,
+        "ui": {
+          "keys": 0,
+          "widthName": 60,
+          "widthComment": 60,
+          "widthDataType": 60,
+          "widthDefault": 60
+        },
+        "meta": {
+          "updateAt": 1755053793440,
+          "createAt": 1755053793440
+        }
+      },
+      "col_9_007": {
+        "id": "col_9_007",
+        "tableId": "tbl_009",
+        "name": "pay_url",
+        "comment": "",
+        "dataType": "TEXT",
+        "default": "",
+        "options": 8,
+        "ui": {
+          "keys": 0,
+          "widthName": 60,
+          "widthComment": 60,
+          "widthDataType": 60,
+          "widthDefault": 60
+        },
+        "meta": {
+          "updateAt": 1755053793440,
+          "createAt": 1755053793440
+        }
+      },
+      "col_9_008": {
+        "id": "col_9_008",
+        "tableId": "tbl_009",
+        "name": "expires_at",
+        "comment": "",
+        "dataType": "DATETIME",
+        "default": "",
+        "options": 8,
+        "ui": {
+          "keys": 0,
+          "widthName": 60,
+          "widthComment": 60,
+          "widthDataType": 60,
+          "widthDefault": 60
+        },
+        "meta": {
+          "updateAt": 1755053793440,
+          "createAt": 1755053793440
+        }
+      },
+      "col_9_009": {
+        "id": "col_9_009",
+        "tableId": "tbl_009",
+        "name": "paid_at",
+        "comment": "",
+        "dataType": "DATETIME",
+        "default": "",
+        "options": 8,
+        "ui": {
+          "keys": 0,
+          "widthName": 60,
+          "widthComment": 60,
+          "widthDataType": 60,
+          "widthDefault": 60
+        },
+        "meta": {
+          "updateAt": 1755053793440,
+          "createAt": 1755053793440
+        }
+      },
+      "col_9_010": {
+        "id": "col_9_010",
+        "tableId": "tbl_009",
+        "name": "metadata",
+        "comment": "",
+        "dataType": "JSONB",
+        "default": "",
+        "options": 8,
+        "ui": {
+          "keys": 0,
+          "widthName": 60,
+          "widthComment": 60,
+          "widthDataType": 60,
+          "widthDefault": 60
+        },
+        "meta": {
+          "updateAt": 1755053793440,
+          "createAt": 1755053793440
+        }
+      },
+      "col_9_011": {
+        "id": "col_9_011",
+        "tableId": "tbl_009",
+        "name": "created_at",
+        "comment": "",
+        "dataType": "DATETIME",
+        "default": "",
+        "options": 8,
+        "ui": {
+          "keys": 0,
+          "widthName": 60,
+          "widthComment": 60,
+          "widthDataType": 60,
+          "widthDefault": 60
+        },
+        "meta": {
+          "updateAt": 1755053793440,
+          "createAt": 1755053793440
+        }
+      },
+      "col_10_000": {
+        "id": "col_10_000",
+        "tableId": "tbl_010",
+        "name": "id",
+        "comment": "",
+        "dataType": "UUID",
+        "default": "",
+        "options": 10,
+        "ui": {
+          "keys": 1,
+          "widthName": 60,
+          "widthComment": 60,
+          "widthDataType": 60,
+          "widthDefault": 60
+        },
+        "meta": {
+          "updateAt": 1755053793440,
+          "createAt": 1755053793440
+        }
+      },
+      "col_10_001": {
+        "id": "col_10_001",
+        "tableId": "tbl_010",
+        "name": "invoice_id",
+        "comment": "",
+        "dataType": "UUID",
+        "default": "",
+        "options": 8,
+        "ui": {
+          "keys": 2,
+          "widthName": 60,
+          "widthComment": 60,
+          "widthDataType": 60,
+          "widthDefault": 60
+        },
+        "meta": {
+          "updateAt": 1755053793440,
+          "createAt": 1755053793440
+        }
+      },
+      "col_10_002": {
+        "id": "col_10_002",
+        "tableId": "tbl_010",
+        "name": "amount_idr",
+        "comment": "",
+        "dataType": "BIGINT",
+        "default": "",
+        "options": 8,
+        "ui": {
+          "keys": 0,
+          "widthName": 62,
+          "widthComment": 60,
+          "widthDataType": 60,
+          "widthDefault": 60
+        },
+        "meta": {
+          "updateAt": 1755053793440,
+          "createAt": 1755053793440
+        }
+      },
+      "col_10_003": {
+        "id": "col_10_003",
+        "tableId": "tbl_010",
+        "name": "status",
+        "comment": "'PENDING','SUCCEEDED','FAILED'",
+        "dataType": "PAYMENT_STATUS",
+        "default": "",
+        "options": 8,
+        "ui": {
+          "keys": 0,
+          "widthName": 60,
+          "widthComment": 175,
+          "widthDataType": 98,
+          "widthDefault": 60
+        },
+        "meta": {
+          "updateAt": 1755055545714,
+          "createAt": 1755053793440
+        }
+      },
+      "col_10_004": {
+        "id": "col_10_004",
+        "tableId": "tbl_010",
+        "name": "method",
+        "comment": "",
+        "dataType": "TEXT",
+        "default": "",
+        "options": 8,
+        "ui": {
+          "keys": 0,
+          "widthName": 60,
+          "widthComment": 60,
+          "widthDataType": 60,
+          "widthDefault": 60
+        },
+        "meta": {
+          "updateAt": 1755053793440,
+          "createAt": 1755053793440
+        }
+      },
+      "col_10_005": {
+        "id": "col_10_005",
+        "tableId": "tbl_010",
+        "name": "raw_payload",
+        "comment": "",
+        "dataType": "JSONB",
+        "default": "",
+        "options": 8,
+        "ui": {
+          "keys": 0,
+          "widthName": 68,
+          "widthComment": 60,
+          "widthDataType": 60,
+          "widthDefault": 60
+        },
+        "meta": {
+          "updateAt": 1755053793440,
+          "createAt": 1755053793440
+        }
+      },
+      "col_10_006": {
+        "id": "col_10_006",
+        "tableId": "tbl_010",
+        "name": "created_at",
+        "comment": "",
+        "dataType": "DATETIME",
+        "default": "",
+        "options": 8,
+        "ui": {
+          "keys": 0,
+          "widthName": 60,
+          "widthComment": 60,
+          "widthDataType": 60,
+          "widthDefault": 60
+        },
+        "meta": {
+          "updateAt": 1755053793440,
+          "createAt": 1755053793440
+        }
+      },
+      "13IV9gEuHK2_lp7l9f4WF": {
+        "id": "13IV9gEuHK2_lp7l9f4WF",
+        "tableId": "tbl_000",
+        "name": "display_name",
+        "comment": "",
+        "dataType": "TEXT",
+        "default": "",
+        "options": 8,
+        "ui": {
+          "keys": 0,
+          "widthName": 73,
+          "widthComment": 60,
+          "widthDataType": 60,
+          "widthDefault": 60
+        },
+        "meta": {
+          "updateAt": 1755055206025,
+          "createAt": 1755055192122
+        }
+      },
+      "Tw79cLpXLm54t3Py-ZlS8": {
+        "id": "Tw79cLpXLm54t3Py-ZlS8",
+        "tableId": "tbl_008",
+        "name": "period_end",
+        "comment": "",
+        "dataType": "DATE",
+        "default": "",
+        "options": 8,
+        "ui": {
+          "keys": 0,
+          "widthName": 62,
+          "widthComment": 60,
+          "widthDataType": 60,
+          "widthDefault": 60
+        },
+        "meta": {
+          "updateAt": 1755055258547,
+          "createAt": 1755055254740
+        }
+      },
+      "tUVuvvxbjQLK5lJ3uKchC": {
+        "id": "tUVuvvxbjQLK5lJ3uKchC",
+        "tableId": "tbl_007",
+        "name": "created_at",
+        "comment": "",
+        "dataType": "DATETIME",
+        "default": "",
+        "options": 8,
+        "ui": {
+          "keys": 0,
+          "widthName": 60,
+          "widthComment": 60,
+          "widthDataType": 60,
+          "widthDefault": 60
+        },
+        "meta": {
+          "updateAt": 1755055593157,
+          "createAt": 1755055588672
+        }
+      },
+      "IlIvK49UyB3VMx1JhI_PB": {
+        "id": "IlIvK49UyB3VMx1JhI_PB",
+        "tableId": "tbl_006",
+        "name": "",
+        "comment": "",
+        "dataType": "",
+        "default": "",
+        "options": 0,
+        "ui": {
+          "keys": 0,
+          "widthName": 60,
+          "widthComment": 60,
+          "widthDataType": 60,
+          "widthDefault": 60
+        },
+        "meta": {
+          "updateAt": 1755055632837,
+          "createAt": 1755055632837
+        }
+      }
+    },
+    "relationshipEntities": {
+      "rel_000": {
+        "id": "rel_000",
+        "identification": false,
+        "relationshipType": 16,
+        "startRelationshipType": 2,
+        "start": {
+          "tableId": "tbl_000",
+          "columnIds": [
+            "col_0_000"
+          ],
+          "x": 719.8181999999999,
+          "y": 514.5454,
+          "direction": 2
+        },
+        "end": {
+          "tableId": "tbl_001",
+          "columnIds": [
+            "col_1_001"
+          ],
+          "x": 1709.5325,
+          "y": 649.6438,
+          "direction": 1
+        },
+        "meta": {
+          "updateAt": 1755053793440,
+          "createAt": 1755053793440
+        }
+      },
+      "rel_001": {
+        "id": "rel_001",
+        "identification": false,
+        "relationshipType": 16,
+        "startRelationshipType": 2,
+        "start": {
+          "tableId": "tbl_000",
+          "columnIds": [
+            "col_0_000"
+          ],
+          "x": 719.8181999999999,
+          "y": 581.2120666666666,
+          "direction": 2
+        },
+        "end": {
+          "tableId": "tbl_002",
+          "columnIds": [
+            "col_2_001"
+          ],
+          "x": 925.2036,
+          "y": 891.8918,
+          "direction": 1
+        },
+        "meta": {
+          "updateAt": 1755053793440,
+          "createAt": 1755053793440
+        }
+      },
+      "rel_002": {
+        "id": "rel_002",
+        "identification": false,
+        "relationshipType": 16,
+        "startRelationshipType": 2,
+        "start": {
+          "tableId": "tbl_001",
+          "columnIds": [
+            "col_1_000"
+          ],
+          "x": 1709.5325,
+          "y": 735.6438,
+          "direction": 1
+        },
+        "end": {
+          "tableId": "tbl_002",
+          "columnIds": [
+            "col_2_003"
+          ],
+          "x": 1503.2036,
+          "y": 761.2251333333332,
+          "direction": 2
+        },
+        "meta": {
+          "updateAt": 1755053793440,
+          "createAt": 1755053793440
+        }
+      },
+      "rel_003": {
+        "id": "rel_003",
+        "identification": false,
+        "relationshipType": 16,
+        "startRelationshipType": 2,
+        "start": {
+          "tableId": "tbl_001",
+          "columnIds": [
+            "col_1_000"
+          ],
+          "x": 1709.5325,
+          "y": 821.6438,
+          "direction": 1
+        },
+        "end": {
+          "tableId": "tbl_002",
+          "columnIds": [
+            "col_2_004"
+          ],
+          "x": 1503.2036,
+          "y": 891.8917999999999,
+          "direction": 2
+        },
+        "meta": {
+          "updateAt": 1755053793440,
+          "createAt": 1755053793440
+        }
+      },
+      "rel_004": {
+        "id": "rel_004",
+        "identification": false,
+        "relationshipType": 16,
+        "startRelationshipType": 2,
+        "start": {
+          "tableId": "tbl_001",
+          "columnIds": [
+            "col_1_000"
+          ],
+          "x": 1709.5325,
+          "y": 907.6438,
+          "direction": 1
+        },
+        "end": {
+          "tableId": "tbl_002",
+          "columnIds": [
+            "col_2_007"
+          ],
+          "x": 1503.2036,
+          "y": 1022.5584666666665,
+          "direction": 2
+        },
+        "meta": {
+          "updateAt": 1755053793440,
+          "createAt": 1755053793440
+        }
+      },
+      "rel_005": {
+        "id": "rel_005",
+        "identification": false,
+        "relationshipType": 16,
+        "startRelationshipType": 2,
+        "start": {
+          "tableId": "tbl_002",
+          "columnIds": [
+            "col_2_000"
+          ],
+          "x": 1214.2036,
+          "y": 1087.8917999999999,
+          "direction": 8
+        },
+        "end": {
+          "tableId": "tbl_003",
+          "columnIds": [
+            "col_3_001"
+          ],
+          "x": 1264.436,
+          "y": 1264.7078,
+          "direction": 1
+        },
+        "meta": {
+          "updateAt": 1755053793440,
+          "createAt": 1755053793440
+        }
+      },
+      "rel_006": {
+        "id": "rel_006",
+        "identification": true,
+        "relationshipType": 16,
+        "startRelationshipType": 2,
+        "start": {
+          "tableId": "tbl_000",
+          "columnIds": [
+            "col_0_000"
+          ],
+          "x": 530.8181999999999,
+          "y": 614.5454,
+          "direction": 8
+        },
+        "end": {
+          "tableId": "tbl_004",
+          "columnIds": [
+            "col_4_000"
+          ],
+          "x": 537.8777,
+          "y": 1020.5103,
+          "direction": 4
+        },
+        "meta": {
+          "updateAt": 1755053793440,
+          "createAt": 1755053793440
+        }
+      },
+      "rel_007": {
+        "id": "rel_007",
+        "identification": false,
+        "relationshipType": 16,
+        "startRelationshipType": 2,
+        "start": {
+          "tableId": "tbl_005",
+          "columnIds": [
+            "col_5_000"
+          ],
+          "x": 2386.9071,
+          "y": 1332.7842,
+          "direction": 8
+        },
+        "end": {
+          "tableId": "tbl_006",
+          "columnIds": [
+            "col_6_000"
+          ],
+          "x": 2337.5471,
+          "y": 1655.4486,
+          "direction": 2
+        },
+        "meta": {
+          "updateAt": 1755053793440,
+          "createAt": 1755053793440
+        }
+      },
+      "rel_008": {
+        "id": "rel_008",
+        "identification": false,
+        "relationshipType": 16,
+        "startRelationshipType": 2,
+        "start": {
+          "tableId": "tbl_000",
+          "columnIds": [
+            "col_0_000"
+          ],
+          "x": 719.8181999999999,
+          "y": 447.87873333333334,
+          "direction": 2
+        },
+        "end": {
+          "tableId": "tbl_007",
+          "columnIds": [
+            "col_7_001"
+          ],
+          "x": 1600.4176,
+          "y": 439.1645,
+          "direction": 1
+        },
+        "meta": {
+          "updateAt": 1755053793440,
+          "createAt": 1755053793440
+        }
+      },
+      "rel_009": {
+        "id": "rel_009",
+        "identification": false,
+        "relationshipType": 16,
+        "startRelationshipType": 2,
+        "start": {
+          "tableId": "tbl_005",
+          "columnIds": [
+            "col_5_000"
+          ],
+          "x": 2386.9071,
+          "y": 1156.7842,
+          "direction": 4
+        },
+        "end": {
+          "tableId": "tbl_007",
+          "columnIds": [
+            "col_7_002"
+          ],
+          "x": 2159.4175999999998,
+          "y": 439.1645,
+          "direction": 2
+        },
+        "meta": {
+          "updateAt": 1755053793440,
+          "createAt": 1755053793440
+        }
+      },
+      "rel_010": {
+        "id": "rel_010",
+        "identification": true,
+        "relationshipType": 16,
+        "startRelationshipType": 2,
+        "start": {
+          "tableId": "tbl_000",
+          "columnIds": [
+            "col_0_000"
+          ],
+          "x": 404.8182,
+          "y": 614.5454,
+          "direction": 8
+        },
+        "end": {
+          "tableId": "tbl_008",
+          "columnIds": [
+            "col_8_000"
+          ],
+          "x": 413.5885,
+          "y": 913.5296,
+          "direction": 2
+        },
+        "meta": {
+          "updateAt": 1755053793440,
+          "createAt": 1755053793440
+        }
+      },
+      "rel_011": {
+        "id": "rel_011",
+        "identification": false,
+        "relationshipType": 16,
+        "startRelationshipType": 2,
+        "start": {
+          "tableId": "tbl_000",
+          "columnIds": [
+            "col_0_000"
+          ],
+          "x": 656.8181999999999,
+          "y": 614.5454,
+          "direction": 8
+        },
+        "end": {
+          "tableId": "tbl_009",
+          "columnIds": [
+            "col_9_001"
+          ],
+          "x": 962.6461,
+          "y": 1357.7516,
+          "direction": 4
+        },
+        "meta": {
+          "updateAt": 1755053793440,
+          "createAt": 1755053793440
+        }
+      },
+      "rel_012": {
+        "id": "rel_012",
+        "identification": false,
+        "relationshipType": 16,
+        "startRelationshipType": 2,
+        "start": {
+          "tableId": "tbl_005",
+          "columnIds": [
+            "col_5_000"
+          ],
+          "x": 2204.4071,
+          "y": 1244.7842,
+          "direction": 1
+        },
+        "end": {
+          "tableId": "tbl_009",
+          "columnIds": [
+            "col_9_002"
+          ],
+          "x": 1240.1461,
+          "y": 1529.7516,
+          "direction": 2
+        },
+        "meta": {
+          "updateAt": 1755053793440,
+          "createAt": 1755053793440
+        }
+      },
+      "rel_013": {
+        "id": "rel_013",
+        "identification": false,
+        "relationshipType": 16,
+        "startRelationshipType": 2,
+        "start": {
+          "tableId": "tbl_009",
+          "columnIds": [
+            "col_9_000"
+          ],
+          "x": 685.1461,
+          "y": 1529.7516,
+          "direction": 1
+        },
+        "end": {
+          "tableId": "tbl_010",
+          "columnIds": [
+            "col_10_001"
+          ],
+          "x": 545.5892,
+          "y": 1524.314,
+          "direction": 2
+        },
+        "meta": {
+          "updateAt": 1755053793440,
+          "createAt": 1755053793440
+        }
+      }
+    },
+    "indexEntities": {
+      "idx_000": {
+        "id": "idx_000",
+        "name": "auth_sub_uniq",
+        "tableId": "tbl_000",
+        "indexColumnIds": [
+          "ic_000"
+        ],
+        "seqIndexColumnIds": [
+          "ic_000"
+        ],
+        "unique": true,
+        "meta": {
+          "updateAt": 1755053793440,
+          "createAt": 1755053793440
+        }
+      },
+      "idx_001": {
+        "id": "idx_001",
+        "name": "code_uniq",
+        "tableId": "tbl_005",
+        "indexColumnIds": [
+          "ic_001"
+        ],
+        "seqIndexColumnIds": [
+          "ic_001"
+        ],
+        "unique": true,
+        "meta": {
+          "updateAt": 1755053793440,
+          "createAt": 1755053793440
+        }
+      }
+    },
+    "indexColumnEntities": {
+      "ic_000": {
+        "id": "ic_000",
+        "indexId": "idx_000",
+        "columnId": "col_0_001",
+        "orderType": 1,
+        "meta": {
+          "updateAt": 1755053793440,
+          "createAt": 1755053793440
+        }
+      },
+      "ic_001": {
+        "id": "ic_001",
+        "indexId": "idx_001",
+        "columnId": "col_5_001",
+        "orderType": 1,
+        "meta": {
+          "updateAt": 1755053793440,
+          "createAt": 1755053793440
+        }
+      }
+    },
+    "memoEntities": {}
+  }
+}

@@ -14,7 +14,7 @@ async function bootstrap() {
   });
 
   // parse cookie (dipakai JwtAuthGuard membaca cookie access_token)
-  app.use(cookieParser());
+  app.use(cookieParser(process.env.COOKIE_SECRET || 'dev-secret'));
 
   // validation pipe global
   app.useGlobalPipes(

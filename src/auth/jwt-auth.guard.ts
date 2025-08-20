@@ -1,31 +1,23 @@
-import { Injectable, CanActivate, ExecutionContext, UnauthorizedException } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
-import { Request } from 'express';
+import { ExecutionContext, Injectable, UnauthorizedException } from '@nestjs/common';
+import { AuthGuard } from '@nestjs/passport';
+import { Reflector } from '@nestjs/core';
+import { IS_PUBLIC_KEY } from 'src/common/decorators/public.decorator';
 
 @Injectable()
-export class JwtAuthGuard implements CanActivate {
-  constructor(private readonly jwtService: JwtService) {}
+export class JwtAuthGuard extends AuthGuard('jwt') {
+  constructor(private reflector: Reflector) { super(); }
 
-  canActivate(context: ExecutionContext): boolean {
-    const request = context.switchToHttp().getRequest<Request>();
-    const authHeader = request.headers['authorization'];
+  canActivate(ctx: ExecutionContext) {
+    const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
+      ctx.getHandler(),
+      ctx.getClass(),
+    ]);
+    if (isPublic) return true;
+    return super.canActivate(ctx);
+  }
 
-    if (!authHeader) {
-      throw new UnauthorizedException('Token tidak ditemukan');
-    }
-
-    const [bearer, token] = authHeader.split(' ');
-
-    if (bearer !== 'Bearer' || !token) {
-      throw new UnauthorizedException('Token tidak valid');
-    }
-
-    try {
-      const payload = this.jwtService.verify(token);
-      request['user'] = payload; // simpan payload di request
-      return true;
-    } catch (err) {
-      throw new UnauthorizedException('Token tidak valid atau expired');
-    }
+  handleRequest(err, user) {
+    if (err || !user) throw new UnauthorizedException('Token invalid/expired');
+    return user;
   }
 }
