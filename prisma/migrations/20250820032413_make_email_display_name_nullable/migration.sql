@@ -7,7 +7,7 @@ CREATE TYPE "public"."JobStatus" AS ENUM ('PENDING', 'QUEUED', 'PROCESSING', 'DO
 -- CreateTable
 CREATE TABLE "public"."User" (
     "id" SERIAL NOT NULL,
-    "email" TEXT NOT NULL,
+    "email" TEXT,
     "authSub" TEXT NOT NULL,
     "displayName" TEXT,
     "role" "public"."Role" NOT NULL DEFAULT 'USER',

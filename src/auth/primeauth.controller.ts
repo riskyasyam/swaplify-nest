@@ -43,6 +43,14 @@ export class PrimeAuthController {
       state,
     });
 
+    params.set(
+      'claims',
+      JSON.stringify({
+        userinfo: { email: { essential: true }, name: { essential: true } },
+        id_token: { email: { essential: true }, name: { essential: true } },
+      })
+    );
+
     return res.redirect(`${ep.authorization_endpoint}?${params.toString()}`);
   }
 
