@@ -1,7 +1,9 @@
+// src/user/user.controller.ts
 import { Controller, Get, Delete, Param, UseGuards } from '@nestjs/common';
 import { UserService } from './user.service';
 import { Roles } from 'src/common/decorators/roles.decorator';
 import { AuthGuard } from '@nestjs/passport';
+import { Public } from 'src/common/decorators/public.decorator';
 
 @Controller('user')
 export class UserController {
@@ -13,8 +15,7 @@ export class UserController {
     return this.userService.getUserQuota(id);
   }
 
-  @UseGuards(AuthGuard('jwt'))
-  @Roles('ADMIN')
+  @Public()
   @Get()
   async getAllUser() {
     return this.userService.getAllUser();

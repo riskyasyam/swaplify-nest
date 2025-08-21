@@ -2,7 +2,7 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
 import axios from 'axios';
 import { PrismaService } from 'src/prisma/prisma.service';
-import type { Role } from '@prisma/client';
+import { Role } from '@prisma/client';
 import { OidcProviderService } from './oidc-provider.service';
 import { decodeJwt } from './utils/jwt.util';
 
@@ -31,6 +31,26 @@ export class AuthService {
     private readonly prisma: PrismaService,
     private readonly oidc: OidcProviderService,
   ) {}
+
+  private async ensureAdminByEmail(email?: string | null) {
+    if (!email) return;
+
+    const adminEmails = (process.env.ADMIN_EMAILS ?? '')
+      .split(',')
+      .map(s => s.trim().toLowerCase())
+      .filter(Boolean);
+    const adminDomain = (process.env.ADMIN_EMAIL_DOMAIN ?? '').toLowerCase();
+
+    const isListed = adminEmails.includes(email.toLowerCase());
+    const isDomain = adminDomain && email.toLowerCase().endsWith(`@${adminDomain}`);
+
+    if (isListed || isDomain) {
+      await this.prisma.user.updateMany({
+        where: { email },
+        data: { role: Role.ADMIN },
+      });
+    }
+  }
 
   // normalize: string kosong -> undefined
   private nz(v?: string | null): string | undefined {
@@ -100,7 +120,6 @@ export class AuthService {
     const me = await this.fetchUserInfo(tokens.access_token);
     const idu = await this.fetchIdentityUser(sub, tokens.access_token);
 
-    // Beberapa endpoint balut payload di "data"
     const ui = me?.data ?? me ?? {};
     const id = idu?.data ?? idu ?? {};
 
@@ -110,7 +129,6 @@ export class AuthService {
       console.log('DEBUG identity:', idu);
     }
 
-    // Prioritas: userinfo > identity > jwt claims
     const email =
       this.nz(ui.email) ??
       this.nz(id.email) ??
@@ -128,15 +146,42 @@ export class AuthService {
       this.nz(claims.preferred_username) ??
       sub;
 
-    const role = (claims?.role ?? 'USER') as Role;
-
-    // Upsert user (User.id sekarang UUID string)
-    const user = await this.prisma.user.upsert({
+    // --- Penting: JANGAN overwrite role dari claims saat update ---
+    // 1) cek apakah user sudah ada
+    const existing = await this.prisma.user.findUnique({
       where: { authSub: sub },
-      update: { email, displayName, role },
-      create: { authSub: sub, email, displayName, role },
-      select: { id: true, email: true, displayName: true, role: true }, // id: string (UUID)
+      select: { id: true, role: true },
     });
+
+    if (existing) {
+      // update data profil saja (role tidak diubah)
+      await this.prisma.user.update({
+        where: { authSub: sub },
+        data: { email, displayName },
+      });
+    } else {
+      // create user baru dengan default USER
+      await this.prisma.user.create({
+        data: {
+          authSub: sub,
+          email,
+          displayName,
+          role: Role.USER,
+        },
+      });
+    }
+
+    // 2) Promote via whitelist (ENV) bila match
+    await this.ensureAdminByEmail(email);
+
+    // 3) Reload user untuk dapatkan role terbaru
+    const user = await this.prisma.user.findUnique({
+      where: { authSub: sub },
+      select: { id: true, email: true, displayName: true, role: true },
+    });
+
+    // Safety: jika karena suatu alasan user null
+    if (!user) throw new BadRequestException('User upsert failed');
 
     // Pastikan FREE subscription aktif (skema baru)
     await this.ensureFreeSubscription(user.id);

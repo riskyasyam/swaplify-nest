@@ -10,6 +10,7 @@ import { FusionModule } from './fusion/fusion.module';
 import { APP_GUARD } from '@nestjs/core';
 import { JwtAuthGuard } from './auth/jwt-auth.guard';
 import { RolesGuard } from './common/guards/roles.guard';
+import { UserController } from './user/user.controller';
 
 @Module({
   imports: [UserModule, PrismaModule, AuthModule, ConfigModule.forRoot({ isGlobal: true}), FilesModule, FusionModule],
