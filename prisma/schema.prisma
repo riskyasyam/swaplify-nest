@@ -1,4 +1,3 @@
-// prisma/schema.prisma
 generator client {
   provider = "prisma-client-js"
 }
@@ -13,76 +12,239 @@ enum Role {
   ADMIN
 }
 
-model User {
-  id          Int       @id @default(autoincrement())
-  email       String?    @unique
-  authSub     String    @unique    // sub dari PrimeAuth
-  displayName String?
-  role        Role      @default(USER)
-  createdAt   DateTime  @default(now())
-
-  subscriptions UserSubscription[]
-  usages        UsageDaily[]
-  FusionJob     FusionJob[]
-}
-
-model Plan {
-  id             Int      @id @default(autoincrement())
-  code           String   @unique
-  name           String
-  maxProcessors  Int
-  requestsPerDay Int
-  priceCents     Int      @default(0)
-  createdAt      DateTime @default(now())
-
-  subscriptions UserSubscription[]
-}
-
-model UserSubscription {
-  id        Int       @id @default(autoincrement())
-  userId    Int
-  planId    Int
-  isActive  Boolean   @default(true)
-  startedAt DateTime  @default(now())
-  endedAt   DateTime?
-  expiresAt DateTime?
-
-  user User @relation(fields: [userId], references: [id])
-  plan Plan @relation(fields: [planId], references: [id])
-
-  @@index([userId, isActive])
-}
-
-model UsageDaily {
-  id     Int      @id @default(autoincrement())
-  userId Int
-  date   DateTime
-  used   Int      @default(0)
-
-  user User @relation(fields: [userId], references: [id])
-
-  @@unique([userId, date])
-}
-
-model FusionJob {
-  id           String    @id @default(cuid())
-  userId       Int
-  status       JobStatus @default(PENDING)
-  sourceKey    String?
-  targetKey    String?
-  outputKey    String?
-  errorMessage String?
-  processors   Int       @default(1)
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
-
-  user User @relation(fields: [userId], references: [id])
+enum JobType {
+  IMAGE_SWAP
+  VIDEO_SWAP
 }
 
 enum JobStatus {
-  PENDING
   QUEUED
-  PROCESSING
-  DONE
+  RUNNING
+  SUCCEEDED
   FAILED
+}
+
+enum InvoiceStatus {
+  PENDING
+  PAID
+  EXPIRED
+  CANCELLED
+}
+
+enum MediaType {
+  IMAGE
+  VIDEO
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  CANCELLED
+  PAST_DUE
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCEEDED
+  FAILED
+}
+
+model User {
+  id          String   @id @default(uuid()) @map("id") @db.Uuid
+  email       String?  @unique @map("email")
+  authSub     String   @unique @map("auth_sub")
+  displayName String?  @map("display_name")
+  role        Role     @default(USER) @map("role")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  // relasi
+  subscriptions Subscription[]
+  usageCounters UsageCounter[]
+  userQuota     UserQuota?
+  jobs          Job[]
+  invoices      Invoice[]
+  mediaAssets   MediaAsset[]
+
+  @@map("users")
+}
+
+model Plan {
+  id        Int      @id @default(autoincrement())
+  code      String   @unique
+  name      String   @map("name") // kolom "name"
+  priority  Int      @default(0) // kolom "priority" (int biasa)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // relasi (kalau ada di skema kamu)
+  entitlements  PlanEntitlement[]
+  subscriptions Subscription[]
+  invoices      Invoice[]
+
+  @@map("plans") // table name = plans
+}
+
+model PlanEntitlement {
+  id           Int  @id @default(autoincrement())
+  planId       Int  @map("plan_id")
+  version      Int
+  entitlements Json @db.JsonB
+
+  plan Plan @relation(fields: [planId], references: [id])
+
+  @@unique([planId, version])
+  @@map("plan_entitlements")
+}
+
+model Subscription {
+  id           Int                @id @default(autoincrement())
+  userId       String             @map("user_id") @db.Uuid
+  planId       Int                @map("plan_id")
+  status       SubscriptionStatus @default(ACTIVE)
+  currentStart DateTime           @map("current_start")
+  currentEnd   DateTime?          @map("current_end")
+  billingRef   String?            @map("billing_ref")
+  createdAt    DateTime           @default(now()) @map("created_at")
+
+  // relasi (match skema kamu sekarang)
+  user User @relation(fields: [userId], references: [id])
+  plan Plan @relation(fields: [planId], references: [id])
+
+  @@index([userId, status])
+  @@map("subscriptions")
+}
+
+model UsageCounter {
+  userId      String   @map("user_id") @db.Uuid
+  periodStart DateTime @map("period_start") @db.Date
+  periodEnd   DateTime @map("period_end") @db.Date
+  jobsTotal   Int      @default(0) @map("jobs_total")
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@id([userId, periodStart, periodEnd])
+  @@map("usage_counters")
+}
+
+model UserQuota {
+  userId     String   @id @map("user_id") @db.Uuid
+  dailyLimit Int      @map("daily_limit")
+  usedToday  Int      @default(0) @map("used_today")
+  resetAt    DateTime @map("reset_at")
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("user_quotas")
+}
+
+model Invoice {
+  id          String        @id @default(uuid()) @db.Uuid
+  userId      String        @map("user_id") @db.Uuid
+  planId      Int           @map("plan_id")
+  amountIdr   BigInt        @map("amount_idr") @db.BigInt // BIGINT
+  description String?
+  status      InvoiceStatus @default(PENDING)
+  gateway     String?
+  payUrl      String?       @map("pay_url")
+  expiresAt   DateTime?     @map("expires_at")
+  paidAt      DateTime?     @map("paid_at")
+  metadata    Json?         @db.JsonB
+  createdAt   DateTime      @default(now()) @map("created_at")
+
+  // relations
+  user     User      @relation(fields: [userId], references: [id])
+  plan     Plan      @relation(fields: [planId], references: [id])
+  payments Payment[]
+
+  @@index([userId, status])
+  @@map("invoices") // table name = invoices
+}
+
+model Payment {
+  id         String        @id @default(uuid()) @db.Uuid
+  invoiceId  String        @map("invoice_id") @db.Uuid
+  amountIdr  BigInt        @map("amount_idr") @db.BigInt
+  status     PaymentStatus @default(PENDING)
+  method     String?
+  rawPayload Json?         @map("raw_payload") @db.JsonB
+  createdAt  DateTime      @default(now()) @map("created_at")
+
+  // relasi
+  invoice Invoice @relation(fields: [invoiceId], references: [id])
+
+  @@map("payments")
+}
+
+
+
+model Job {
+  id            String  @id @default(cuid())
+  userId        String  @map("user_id") @db.Uuid
+  jobType       JobType @map("job_type")
+
+  sourceAssetId String? @map("source_asset_id") @db.Uuid
+  targetAssetId String? @map("target_asset_id") @db.Uuid
+  outputAssetId String? @map("output_asset_id") @db.Uuid
+
+  status         JobStatus @default(QUEUED)
+  progressPct    Int?      @map("progress_pct")
+  errorCode      String?   @map("error_code")
+  errorMessage   String?   @map("error_message")
+  idempotencyKey String?   @map("idempotency_key")
+
+  createdAt  DateTime  @default(now()) @map("created_at")
+  startedAt  DateTime? @map("started_at")
+  finishedAt DateTime? @map("finished_at")
+
+  user User @relation(fields: [userId], references: [id])
+
+  sourceAsset MediaAsset? @relation("job_source_asset", fields: [sourceAssetId], references: [id])
+  targetAsset MediaAsset? @relation("job_target_asset", fields: [targetAssetId], references: [id])
+  outputAsset MediaAsset? @relation("job_output_asset", fields: [outputAssetId], references: [id])
+
+  events JobEvent[]
+
+  @@unique([idempotencyKey])
+  @@index([userId, status])
+  @@map("jobs")
+}
+
+model JobEvent {
+  id         BigInt     @id @default(autoincrement()) // BIGSERIAL
+  jobId      String     @map("job_id")
+  fromStatus JobStatus? @map("from_status")
+  toStatus   JobStatus  @map("to_status")
+  message    String?
+  createdAt  DateTime   @default(now()) @map("created_at")
+
+  job        Job        @relation(fields: [jobId], references: [id])
+
+  @@index([jobId])
+  @@map("job_events")
+}
+
+
+model MediaAsset {
+  id          String    @id @default(uuid()) @db.Uuid
+  userId      String    @map("user_id") @db.Uuid
+  type        MediaType
+  bucket      String?
+  objectKey   String    @map("object_key")
+  mimeType    String?   @map("mime_type")
+  sizeBytes   BigInt?   @map("size_bytes") @db.BigInt
+  width       Int?
+  height      Int?
+  durationSec Int?      @map("duration_sec")
+  sha256      String?
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  // relasi wajib ada sisi balik utk relasi bernama di Job:
+  sourceForJobs Job[] @relation("job_source_asset")
+  targetForJobs Job[] @relation("job_target_asset")
+  outputForJobs Job[] @relation("job_output_asset")
+
+  // relasi user (sudah ada)
+  user User @relation(fields: [userId], references: [id])
+
+  @@unique([bucket, objectKey])
+  @@index([userId, type])
+  @@map("media_assets")
 }

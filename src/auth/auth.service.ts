@@ -1,3 +1,4 @@
+// src/auth/auth.service.ts
 import { Injectable, BadRequestException } from '@nestjs/common';
 import axios from 'axios';
 import { PrismaService } from 'src/prisma/prisma.service';
@@ -28,119 +29,14 @@ type TokenClaims = {
 export class AuthService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly oidc: OidcProviderService
+    private readonly oidc: OidcProviderService,
   ) {}
 
-  // === Helper kecil: normalize string kosong -> undefined ===
+  // normalize: string kosong -> undefined
   private nz(v?: string | null): string | undefined {
     if (!v) return undefined;
-    const t = v.trim();
+    const t = String(v).trim();
     return t.length ? t : undefined;
-  }
-
-  // === Helper: tarik /userinfo (pakai access_token) ===
-  private async fetchUserInfo(accessToken?: string): Promise<any> {
-    if (!accessToken) return {};
-    try {
-      const { data } = await axios.get(
-        `${process.env.PRIMEAUTH_AUTH_SERVICE_URL}/realms/${process.env.REALM_ID}/protocol/openid-connect/userinfo`,
-        { headers: { Authorization: `Bearer ${accessToken}` }, timeout: 7000 }
-      );
-      return data ?? {};
-    } catch {
-      return {};
-    }
-  }
-
-  // === Helper: fallback ke Identity Service ===
-  private async fetchIdentityUser(sub: string, accessToken?: string): Promise<any> {
-    if (!accessToken || !process.env.IDENTITY_SERVICE_URL) return {};
-    try {
-      const { data } = await axios.get(
-        `${process.env.IDENTITY_SERVICE_URL}/api/v1/users/${sub}`,
-        { headers: { Authorization: `Bearer ${accessToken}` }, timeout: 7000 }
-      );
-      return data ?? {};
-    } catch {
-      return {};
-    }
-  }
-
-  /**
-   * Tukar code -> tokens, merge claims + userinfo + identity, upsert user, return user+tokens
-   */
-  async handlePrimeAuthCallback(code: string) {
-    if (!code) throw new BadRequestException('Missing authorization code');
-
-    const tokens = await this.exchangeCodeForTokens(code);
-    const jwt = tokens.id_token ?? tokens.access_token;
-    if (!jwt) throw new BadRequestException('No JWT returned from PrimeAuth');
-
-    const claims = this.decodeJwt(jwt) as TokenClaims;
-    const sub = claims?.sub;
-    if (!sub) throw new BadRequestException('Token missing sub');
-
-    // helper: normalize string kosong -> undefined
-    const nz = (v?: string | null) => (v && `${v}`.trim().length ? `${v}`.trim() : undefined);
-
-    // 1) /userinfo
-    let me: any = {};
-    try {
-      const r = await axios.get(
-        `${process.env.PRIMEAUTH_AUTH_SERVICE_URL}/realms/${process.env.REALM_ID}/protocol/openid-connect/userinfo`,
-        { headers: { Authorization: `Bearer ${tokens.access_token}` }, timeout: 7000 }
-      );
-      me = r.data ?? {};
-    } catch {}
-
-    // 2) /identity
-    let idu: any = {};
-    try {
-      if (process.env.IDENTITY_SERVICE_URL) {
-        const r = await axios.get(
-          `${process.env.IDENTITY_SERVICE_URL}/api/v1/users/${sub}`,
-          { headers: { Authorization: `Bearer ${tokens.access_token}` }, timeout: 7000 }
-        );
-        idu = r.data ?? {};
-      }
-    } catch {}
-
-    // IMPORTANT: Kedua API bungkus payload di 'data'
-    const ui = me?.data ?? {};   // userinfo inner
-    const id = idu?.data ?? {};  // identity inner
-
-    if (process.env.DEBUG_AUTH === '1') {
-      console.log('DEBUG ui (userinfo.data):', ui);
-      console.log('DEBUG id (identity.data):', id);
-    }
-
-    // 3) Merge prioritas: userinfo > identity > jwt claims
-    const email =
-      nz(ui.email) ??
-      nz(id.email) ??
-      nz(claims.email) ??
-      `${sub}@${process.env.PLACEHOLDER_EMAIL_DOMAIN ?? 'no-email.local'}`;
-
-    const displayName =
-      nz(ui.name) ??
-      nz(`${ui.given_name ?? ''} ${ui.family_name ?? ''}`) ??
-      nz(ui.preferred_username) ??
-      nz(id.full_name) ?? nz(id.name) ?? nz(id.username) ??
-      nz(claims.name) ?? nz(claims.preferred_username) ??
-      sub;
-
-    const role = (claims?.role ?? 'USER') as Role;
-
-    // 4) Upsert: selalu update supaya record lama yang kosong terisi
-    const user = await this.prisma.user.upsert({
-      where: { authSub: sub },
-      update: { email, displayName, role },
-      create: { authSub: sub, email, displayName, role },
-      select: { id: true, email: true, displayName: true, role: true },
-    });
-
-    await this.ensureFreeSubscription(user.id);
-    return { user, tokens };
   }
 
   private async exchangeCodeForTokens(code: string): Promise<PrimeTokens> {
@@ -160,16 +56,105 @@ export class AuthService {
     return data;
   }
 
-  private decodeJwt(token: string) {
-    return decodeJwt(token);
+  private async fetchUserInfo(accessToken?: string): Promise<any> {
+    if (!accessToken) return {};
+    try {
+      const { data } = await axios.get(
+        `${process.env.PRIMEAUTH_AUTH_SERVICE_URL}/realms/${process.env.REALM_ID}/protocol/openid-connect/userinfo`,
+        { headers: { Authorization: `Bearer ${accessToken}` }, timeout: 7000 },
+      );
+      return data ?? {};
+    } catch {
+      return {};
+    }
   }
 
-  private async ensureFreeSubscription(userId: number) {
-    const hasActive = await this.prisma.userSubscription.findFirst({
-      where: { userId, isActive: true },
+  private async fetchIdentityUser(sub: string, accessToken?: string): Promise<any> {
+    if (!accessToken || !process.env.IDENTITY_SERVICE_URL) return {};
+    try {
+      const { data } = await axios.get(
+        `${process.env.IDENTITY_SERVICE_URL}/api/v1/users/${sub}`,
+        { headers: { Authorization: `Bearer ${accessToken}` }, timeout: 7000 },
+      );
+      return data ?? {};
+    } catch {
+      return {};
+    }
+  }
+
+  /**
+   * Tukar code -> tokens, merge claims + userinfo + identity, upsert user, return user+tokens
+   */
+  async handlePrimeAuthCallback(code: string) {
+    if (!code) throw new BadRequestException('Missing authorization code');
+
+    const tokens = await this.exchangeCodeForTokens(code);
+    const jwt = tokens.id_token ?? tokens.access_token;
+    if (!jwt) throw new BadRequestException('No JWT returned from PrimeAuth');
+
+    const claims = decodeJwt(jwt) as TokenClaims;
+    const sub = claims?.sub;
+    if (!sub) throw new BadRequestException('Token missing sub');
+
+    // Ambil userinfo & identity (kalau tersedia)
+    const me = await this.fetchUserInfo(tokens.access_token);
+    const idu = await this.fetchIdentityUser(sub, tokens.access_token);
+
+    // Beberapa endpoint balut payload di "data"
+    const ui = me?.data ?? me ?? {};
+    const id = idu?.data ?? idu ?? {};
+
+    if (process.env.DEBUG_AUTH === '1') {
+      console.log('DEBUG claims:', claims);
+      console.log('DEBUG userinfo:', me);
+      console.log('DEBUG identity:', idu);
+    }
+
+    // Prioritas: userinfo > identity > jwt claims
+    const email =
+      this.nz(ui.email) ??
+      this.nz(id.email) ??
+      this.nz(claims.email) ??
+      `${sub}@${process.env.PLACEHOLDER_EMAIL_DOMAIN ?? 'no-email.local'}`;
+
+    const displayName =
+      this.nz(ui.name) ??
+      this.nz(`${ui.given_name ?? ''} ${ui.family_name ?? ''}`) ??
+      this.nz(ui.preferred_username) ??
+      this.nz(id.full_name) ??
+      this.nz(id.name) ??
+      this.nz(id.username) ??
+      this.nz(claims.name) ??
+      this.nz(claims.preferred_username) ??
+      sub;
+
+    const role = (claims?.role ?? 'USER') as Role;
+
+    // Upsert user (User.id sekarang UUID string)
+    const user = await this.prisma.user.upsert({
+      where: { authSub: sub },
+      update: { email, displayName, role },
+      create: { authSub: sub, email, displayName, role },
+      select: { id: true, email: true, displayName: true, role: true }, // id: string (UUID)
+    });
+
+    // Pastikan FREE subscription aktif (skema baru)
+    await this.ensureFreeSubscription(user.id);
+
+    return { user, tokens };
+  }
+
+  /**
+   * Skema baru:
+   * - Subscription pakai status/currentStart/currentEnd
+   * - userId = UUID (string)
+   */
+  private async ensureFreeSubscription(userId: string) {
+    const existing = await this.prisma.subscription.findFirst({
+      where: { userId, status: 'ACTIVE', currentEnd: null },
       select: { id: true },
     });
-    if (hasActive) return;
+    if (existing) return;
 
     const freePlan = await this.prisma.plan.findUnique({
       where: { code: 'FREE' },
@@ -177,8 +162,15 @@ export class AuthService {
     });
     if (!freePlan) return;
 
-    await this.prisma.userSubscription.create({
-      data: { userId, planId: freePlan.id, isActive: true, startedAt: new Date() },
+    await this.prisma.subscription.create({
+      data: {
+        userId,                 // UUID string
+        planId: freePlan.id,
+        status: 'ACTIVE',
+        currentStart: new Date(),
+        currentEnd: null,
+        billingRef: null,
+      },
     });
   }
 }

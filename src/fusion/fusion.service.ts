@@ -1,7 +1,20 @@
-import { Injectable, HttpException, NotFoundException } from '@nestjs/common';
+import { Injectable, HttpException } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { S3Service } from 'src/files/s3.service';
+import { JobStatus, JobType, MediaType } from '@prisma/client';
 import fetch from 'node-fetch';
+
+type CreateJobDto = {
+  sourceKey: string;
+  targetKey: string;
+  processors?: number; // tidak disimpan di DB, tapi diteruskan ke worker
+};
+
+function monthRange(d = new Date()) {
+  const start = new Date(d.getFullYear(), d.getMonth(), 1);
+  const end = new Date(d.getFullYear(), d.getMonth() + 1, 0);
+  return { start, end };
+}
 
 @Injectable()
 export class FusionService {
@@ -10,76 +23,216 @@ export class FusionService {
     private s3: S3Service,
   ) {}
 
-  
+  /** Pastikan ada usage row utk bulan berjalan */
+  private async ensureUsageCounter(userId: string) {
+    const { start, end } = monthRange();
+    await this.prisma.usageCounter.upsert({
+      where: {
+        userId_periodStart_periodEnd: { userId, periodStart: start, periodEnd: end },
+      },
+      update: {},
+      create: { userId, periodStart: start, periodEnd: end, jobsTotal: 0 },
+    });
+  }
 
-  async createJob(userId: number, dto: { sourceKey: string; targetKey: string; processors?: number }) {
-    // Optional: HEAD ke S3 untuk validasi file ada
-    // (boleh diskip dulu agar cepat)
+  /** Tambah pemakaian (jobsTotal) bulan berjalan */
+  private async incUsage(userId: string, n = 1) {
+    const { start, end } = monthRange();
+    await this.prisma.usageCounter.upsert({
+      where: {
+        userId_periodStart_periodEnd: { userId, periodStart: start, periodEnd: end },
+      },
+      update: { jobsTotal: { increment: n } },
+      create: { userId, periodStart: start, periodEnd: end, jobsTotal: n },
+    });
+  }
 
-    const job = await this.prisma.fusionJob.create({
+  /**
+   * Buat Job baru.
+   * NOTE: Saat ini kita tidak memotong kuota di awal (no hard-limit),
+   *        pemakaian dihitung saat job SUCCEEDED (lebih fair).
+   *        Kalau mau hard-limit, tambahkan pengecekan ke subscription/entitlements di sini.
+   */
+  async createJob(userId: string, dto: CreateJobDto) {
+    // Simpan media input sebagai MediaAsset (S3 input bucket)
+    const inputBucket = process.env.S3_INPUT_BUCKET!;
+    const source = await this.prisma.mediaAsset.create({
       data: {
         userId,
-        sourceKey: dto.sourceKey,
-        targetKey: dto.targetKey,
-        processors: dto.processors ?? 1,
-        status: 'QUEUED',
+        type: MediaType.IMAGE, // bisa diubah dinamis jika kamu deteksi MIME
+        bucket: inputBucket,
+        objectKey: dto.sourceKey,
       },
     });
 
-    // Trigger worker via HTTP
-    const res = await fetch(`${process.env.WORKER_BASE_URL}/worker/facefusion`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Worker-Secret': process.env.WORKER_SHARED_SECRET ?? '',
+    const target = await this.prisma.mediaAsset.create({
+      data: {
+        userId,
+        type: MediaType.IMAGE,
+        bucket: inputBucket,
+        objectKey: dto.targetKey,
       },
-      body: JSON.stringify({
+    });
+
+    // Buat job status QUEUED
+    const job = await this.prisma.job.create({
+      data: {
+        userId,
+        jobType: JobType.IMAGE_SWAP, // untuk video, set VIDEO_SWAP
+        status: JobStatus.QUEUED,
+        sourceAssetId: source.id,
+        targetAssetId: target.id,
+      },
+    });
+
+    // Event: enqueued
+    await this.prisma.jobEvent.create({
+      data: {
         jobId: job.id,
-        sourceKey: job.sourceKey,
-        targetKey: job.targetKey,
-        processors: job.processors,
-        // taruh opsi lain kalau perlu
-      }),
+        fromStatus: null,
+        toStatus: JobStatus.QUEUED,
+        message: 'Job enqueued',
+      },
     });
 
-    if (!res.ok) {
-      const text = await res.text();
-      // Mark FAILED jika gagal dispatch
-      await this.prisma.fusionJob.update({
-        where: { id: job.id },
-        data: { status: 'FAILED', errorMessage: `dispatch failed: ${text}` },
+    // Dispatch ke worker (tetap kirim S3 objectKey agar worker tidak perlu query DB)
+    try {
+      const res = await fetch(`${process.env.WORKER_BASE_URL}/worker/facefusion`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Worker-Secret': process.env.WORKER_SHARED_SECRET ?? '',
+        },
+        body: JSON.stringify({
+          jobId: job.id,
+          sourceKey: dto.sourceKey,
+          targetKey: dto.targetKey,
+          processors: dto.processors ?? 1,
+        }),
       });
-      throw new HttpException(`Dispatch worker failed: ${text}`, 500);
+
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(text);
+      }
+    } catch (e: any) {
+      // Mark FAILED + event
+      await this.prisma.$transaction([
+        this.prisma.job.update({
+          where: { id: job.id },
+          data: {
+            status: JobStatus.FAILED,
+            errorMessage: `dispatch failed: ${e?.message ?? String(e)}`,
+          },
+        }),
+        this.prisma.jobEvent.create({
+          data: {
+            jobId: job.id,
+            fromStatus: JobStatus.QUEUED,
+            toStatus: JobStatus.FAILED,
+            message: 'Dispatch worker failed',
+          },
+        }),
+      ]);
+      throw new HttpException(`Dispatch worker failed: ${e?.message ?? e}`, 500);
     }
 
     return { jobId: job.id, status: job.status };
   }
 
+  /** Cek status job. Jika SUCCEEDED dan ada output asset → beri presigned URL */
   async getJob(jobId: string) {
-    const job = await this.prisma.fusionJob.findUnique({ where: { id: jobId } });
+    const job = await this.prisma.job.findUnique({
+      where: { id: jobId },
+      include: { outputAsset: true },
+    });
     if (!job) throw new HttpException('Not found', 404);
 
-    if (job.status === 'DONE' && job.outputKey) {
-      const dl = await this.s3.presignDownload(job.outputKey, process.env.S3_OUTPUT_BUCKET);
-      return { jobId: job.id, status: job.status, outputKey: job.outputKey, downloadUrl: dl.url };
+    if (job.status === JobStatus.SUCCEEDED && job.outputAsset?.objectKey) {
+      const dl = await this.s3.presignDownload(
+        job.outputAsset.objectKey,
+        job.outputAsset.bucket ?? process.env.S3_OUTPUT_BUCKET,
+      );
+      return {
+        jobId: job.id,
+        status: job.status,
+        outputKey: job.outputAsset.objectKey,
+        downloadUrl: dl.url,
+      };
     }
+
     return { jobId: job.id, status: job.status, error: job.errorMessage ?? undefined };
   }
 
-  // Dipanggil worker ketika selesai
-  async markDone(jobId: string, payload: { outputKey: string }) {
-    await this.prisma.fusionJob.update({
-      where: { id: jobId },
-      data: { status: 'DONE', outputKey: payload.outputKey, errorMessage: null },
+  /** Dipanggil worker ketika selesai sukses */
+  async markDone(
+    jobId: string,
+    payload: { outputKey: string; bucket?: string; mimeType?: string },
+  ) {
+    const job = await this.prisma.job.findUnique({ where: { id: jobId } });
+    if (!job) throw new HttpException('Not found', 404);
+
+    // Simpan output sebagai MediaAsset
+    const bucket = payload.bucket ?? process.env.S3_OUTPUT_BUCKET!;
+    const out = await this.prisma.mediaAsset.create({
+      data: {
+        userId: job.userId,
+        type: MediaType.IMAGE, // sesuaikan dengan hasil worker
+        bucket,
+        objectKey: payload.outputKey,
+        mimeType: payload.mimeType ?? undefined,
+      },
     });
+
+    await this.prisma.$transaction([
+      // mark job succeeded
+      this.prisma.job.update({
+        where: { id: jobId },
+        data: {
+          status: JobStatus.SUCCEEDED,
+          finishedAt: new Date(),
+          outputAssetId: out.id,
+          errorMessage: null,
+        },
+      }),
+      // event
+      this.prisma.jobEvent.create({
+        data: {
+          jobId,
+          fromStatus: JobStatus.RUNNING,
+          toStatus: JobStatus.SUCCEEDED,
+          message: 'Worker finished',
+        },
+      }),
+    ]);
+
+    // hitung pemakaian hanya saat sukses
+    await this.incUsage(job.userId, 1);
+
     return { ok: true };
   }
 
+  /** Dipanggil worker ketika gagal */
   async markFailed(jobId: string, payload: { error: string }) {
-    await this.prisma.fusionJob.update({
-      where: { id: jobId },
-      data: { status: 'FAILED', errorMessage: payload.error },
-    });
+    await this.prisma.$transaction([
+      this.prisma.job.update({
+        where: { id: jobId },
+        data: {
+          status: JobStatus.FAILED,
+          finishedAt: new Date(),
+          errorMessage: payload.error,
+        },
+      }),
+      this.prisma.jobEvent.create({
+        data: {
+          jobId,
+          fromStatus: JobStatus.RUNNING,
+          toStatus: JobStatus.FAILED,
+          message: payload.error?.slice(0, 500),
+        },
+      }),
+    ]);
+
     return { ok: true };
   }
 }

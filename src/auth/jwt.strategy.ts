@@ -1,50 +1,46 @@
-// src/auth/jwt.strategy.ts
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy, StrategyOptions } from 'passport-jwt';
 import * as jwksRsa from 'jwks-rsa';
 
-// ambil token dari cookie "access_token" atau Authorization: Bearer
+// ambil token dari cookie "access_token" ATAU Authorization: Bearer
 const cookieOrAuthExtractor = (req: any) => {
   if (!req) return null;
-  // 1) cookie
-  if (req.cookies && req.cookies['access_token']) {
-    return req.cookies['access_token'];
-  }
-  // 2) header
-  const auth = req.headers?.authorization || req.headers?.Authorization;
-  if (typeof auth === 'string' && auth.startsWith('Bearer ')) {
-    return auth.slice('Bearer '.length);
-  }
+  const c = req.cookies?.['access_token'];
+  if (typeof c === 'string' && c.length > 0) return c;
+
+  const h = req.headers?.authorization || req.headers?.Authorization;
+  if (typeof h === 'string' && h.startsWith('Bearer ')) return h.slice(7);
   return null;
 };
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
   constructor() {
-    const issuer = process.env.PRIMEAUTH_ISSUER || undefined;
-    const audience = process.env.API_AUDIENCE || undefined;
+    const issuer = process.env.PRIMEAUTH_ISSUER || undefined;   // e.g. https://.../auth/realms/<REALM_ID>
+    const audience = process.env.API_AUDIENCE || undefined;     // optional
 
-    // pakai JWKS dari PrimeAuth
-    const jwksUri = process.env.PRIMEAUTH_JWKS_URI!;
+    if (!process.env.PRIMEAUTH_JWKS_URI) {
+      throw new Error('PRIMEAUTH_JWKS_URI is required for RS256 verification');
+    }
+
     const secretProvider = jwksRsa.passportJwtSecret({
       cache: true,
       cacheMaxEntries: 5,
-      cacheMaxAge: 10 * 60 * 1000, // 10 menit
+      cacheMaxAge: 10 * 60 * 1000,
       rateLimit: true,
       jwksRequestsPerMinute: 5,
-      jwksUri,
+      jwksUri: process.env.PRIMEAUTH_JWKS_URI,
     });
 
     const opts: StrategyOptions = {
       jwtFromRequest: ExtractJwt.fromExtractors([cookieOrAuthExtractor]),
       ignoreExpiration: false,
-      algorithms: ['RS256'],
-      // SEMENTARA: jangan set issuer/audience kalau belum yakin
+      algorithms: ['RS256'],                    // <— RS256 ONLY
       ...(issuer ? { issuer } : {}),
       ...(audience ? { audience } : {}),
-      secretOrKeyProvider: (request, rawJwtToken, done) => {
-        (secretProvider as any)(request, rawJwtToken, done);
+      secretOrKeyProvider: (req, rawJwt, done) => {
+        (secretProvider as any)(req, rawJwt, done);
       },
     };
 
@@ -52,16 +48,12 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   async validate(payload: any) {
-    // payload sudah diverifikasi signature-nya
-    // kamu bisa map claim dari PrimeAuth → req.user
-    // contoh umum: sub, email, name, role
-    if (!payload || !payload.sub) {
-      throw new UnauthorizedException('Invalid token payload');
-    }
+    if (!payload?.sub) throw new UnauthorizedException('Invalid token payload');
     return {
+      sub: payload.sub,
       userId: payload.sub,
       email: payload.email,
-      name: payload.name,
+      name: payload.name || payload.preferred_username,
       role: payload.role || 'USER',
     };
   }

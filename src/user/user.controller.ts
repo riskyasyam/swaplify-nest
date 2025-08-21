@@ -7,9 +7,10 @@ import { AuthGuard } from '@nestjs/passport';
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
+  // GET /user/:id/quota  (id = UUID string)
   @Get(':id/quota')
   async getUserQuota(@Param('id') id: string) {
-    return this.userService.getUserQuota(Number(id));
+    return this.userService.getUserQuota(id);
   }
 
   @UseGuards(AuthGuard('jwt'))
@@ -23,10 +24,14 @@ export class UserController {
   @Roles('ADMIN')
   @Delete(':id')
   async deleteUser(@Param('id') id: string) {
-    const deletedUser = await this.userService.deleteUser(+id);
+    const deletedUser = await this.userService.deleteUser(id);
     return {
       message: `User ${id} dihapus`,
-      user: { id: deletedUser.id, email: deletedUser.email, createdAt: deletedUser.createdAt },
+      user: {
+        id: deletedUser.id,
+        email: deletedUser.email,
+        createdAt: deletedUser.createdAt,
+      },
     };
   }
 }
