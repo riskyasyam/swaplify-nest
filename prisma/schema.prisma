@@ -34,6 +34,7 @@ enum InvoiceStatus {
 enum MediaType {
   IMAGE
   VIDEO
+  AUDIO
 }
 
 enum SubscriptionStatus {
@@ -46,6 +47,16 @@ enum PaymentStatus {
   PENDING
   SUCCEEDED
   FAILED
+}
+
+enum FeatureType {
+  processor
+  feature
+}
+
+enum FeatureStatus {
+  ACTIVE
+  INACTIVE
 }
 
 model User {
@@ -78,6 +89,7 @@ model Plan {
   entitlements  PlanEntitlement[]
   subscriptions Subscription[]
   invoices      Invoice[]
+  featurePlan   FeaturePlan[]
 
   @@map("plans") // table name = plans
 }
@@ -95,7 +107,7 @@ model PlanEntitlement {
 }
 
 model Subscription {
-  id           Int                @id @default(autoincrement())
+  id           String             @id @default(uuid()) @db.Uuid
   userId       String             @map("user_id") @db.Uuid
   planId       Int                @map("plan_id")
   status       SubscriptionStatus @default(ACTIVE)
@@ -173,15 +185,16 @@ model Payment {
   @@map("payments")
 }
 
-
-
 model Job {
-  id            String  @id @default(cuid())
-  userId        String  @map("user_id") @db.Uuid
-  jobType       JobType @map("job_type")
+  id     String @id @default(cuid())
+  userId String @map("user_id") @db.Uuid
+
+  processors String[] @map("processors") //contoh : array ["face_swapper", "face_enhancer"]
+  options     Json?    @map("options") //contoh : {"faceSwap": {"model": "v1", "threshold": 0.8}}
 
   sourceAssetId String? @map("source_asset_id") @db.Uuid
   targetAssetId String? @map("target_asset_id") @db.Uuid
+  audioAssetId  String? @map("audio_asset_id") @db.Uuid
   outputAssetId String? @map("output_asset_id") @db.Uuid
 
   status         JobStatus @default(QUEUED)
@@ -195,9 +208,9 @@ model Job {
   finishedAt DateTime? @map("finished_at")
 
   user User @relation(fields: [userId], references: [id])
-
   sourceAsset MediaAsset? @relation("job_source_asset", fields: [sourceAssetId], references: [id])
   targetAsset MediaAsset? @relation("job_target_asset", fields: [targetAssetId], references: [id])
+  audioAsset  MediaAsset? @relation("job_audio_asset", fields: [audioAssetId], references: [id])
   outputAsset MediaAsset? @relation("job_output_asset", fields: [outputAssetId], references: [id])
 
   events JobEvent[]
@@ -215,12 +228,11 @@ model JobEvent {
   message    String?
   createdAt  DateTime   @default(now()) @map("created_at")
 
-  job        Job        @relation(fields: [jobId], references: [id])
+  job Job @relation(fields: [jobId], references: [id])
 
   @@index([jobId])
   @@map("job_events")
 }
-
 
 model MediaAsset {
   id          String    @id @default(uuid()) @db.Uuid
@@ -228,6 +240,7 @@ model MediaAsset {
   type        MediaType
   bucket      String?
   objectKey   String    @map("object_key")
+  path        String?   @map("path")
   mimeType    String?   @map("mime_type")
   sizeBytes   BigInt?   @map("size_bytes") @db.BigInt
   width       Int?
@@ -239,6 +252,7 @@ model MediaAsset {
   // relasi wajib ada sisi balik utk relasi bernama di Job:
   sourceForJobs Job[] @relation("job_source_asset")
   targetForJobs Job[] @relation("job_target_asset")
+  audioForJobs  Job[] @relation("job_audio_asset")
   outputForJobs Job[] @relation("job_output_asset")
 
   // relasi user (sudah ada)
@@ -247,4 +261,29 @@ model MediaAsset {
   @@unique([bucket, objectKey])
   @@index([userId, type])
   @@map("media_assets")
+}
+
+model Feature {
+  id        Int           @id @default(autoincrement())
+  name      String        @unique
+  value     String
+  type      FeatureType
+  status    FeatureStatus
+  createdAt DateTime      @default(now()) @map("created_at")
+
+  plans FeaturePlan[]
+
+  @@map("features")
+}
+
+model FeaturePlan {
+  featureId Int           @map("feature_id")
+  planId    Int           @map("plan_id")
+  status    FeatureStatus
+
+  feature Feature @relation(fields: [featureId], references: [id])
+  plan    Plan    @relation(fields: [planId], references: [id])
+
+  @@id([featureId, planId])
+  @@map("feature_plans")
 }

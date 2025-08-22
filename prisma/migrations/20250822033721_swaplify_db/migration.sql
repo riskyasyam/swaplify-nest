@@ -11,13 +11,19 @@ CREATE TYPE "public"."JobStatus" AS ENUM ('QUEUED', 'RUNNING', 'SUCCEEDED', 'FAI
 CREATE TYPE "public"."InvoiceStatus" AS ENUM ('PENDING', 'PAID', 'EXPIRED', 'CANCELLED');
 
 -- CreateEnum
-CREATE TYPE "public"."MediaType" AS ENUM ('IMAGE', 'VIDEO');
+CREATE TYPE "public"."MediaType" AS ENUM ('IMAGE', 'VIDEO', 'AUDIO');
 
 -- CreateEnum
 CREATE TYPE "public"."SubscriptionStatus" AS ENUM ('ACTIVE', 'CANCELLED', 'PAST_DUE');
 
 -- CreateEnum
 CREATE TYPE "public"."PaymentStatus" AS ENUM ('PENDING', 'SUCCEEDED', 'FAILED');
+
+-- CreateEnum
+CREATE TYPE "public"."FeatureType" AS ENUM ('processor', 'feature');
+
+-- CreateEnum
+CREATE TYPE "public"."FeatureStatus" AS ENUM ('ACTIVE', 'INACTIVE');
 
 -- CreateTable
 CREATE TABLE "public"."users" (
@@ -54,7 +60,7 @@ CREATE TABLE "public"."plan_entitlements" (
 
 -- CreateTable
 CREATE TABLE "public"."subscriptions" (
-    "id" SERIAL NOT NULL,
+    "id" UUID NOT NULL,
     "user_id" UUID NOT NULL,
     "plan_id" INTEGER NOT NULL,
     "status" "public"."SubscriptionStatus" NOT NULL DEFAULT 'ACTIVE',
@@ -121,9 +127,11 @@ CREATE TABLE "public"."payments" (
 CREATE TABLE "public"."jobs" (
     "id" TEXT NOT NULL,
     "user_id" UUID NOT NULL,
-    "job_type" "public"."JobType" NOT NULL,
+    "processors" TEXT[],
+    "options" JSONB,
     "source_asset_id" UUID,
     "target_asset_id" UUID,
+    "audio_asset_id" UUID,
     "output_asset_id" UUID,
     "status" "public"."JobStatus" NOT NULL DEFAULT 'QUEUED',
     "progress_pct" INTEGER,
@@ -156,6 +164,7 @@ CREATE TABLE "public"."media_assets" (
     "type" "public"."MediaType" NOT NULL,
     "bucket" TEXT,
     "object_key" TEXT NOT NULL,
+    "path" TEXT,
     "mime_type" TEXT,
     "size_bytes" BIGINT,
     "width" INTEGER,
@@ -165,6 +174,27 @@ CREATE TABLE "public"."media_assets" (
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "media_assets_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "public"."features" (
+    "id" SERIAL NOT NULL,
+    "name" TEXT NOT NULL,
+    "value" TEXT NOT NULL,
+    "type" "public"."FeatureType" NOT NULL,
+    "status" "public"."FeatureStatus" NOT NULL,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "features_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "public"."feature_plans" (
+    "feature_id" INTEGER NOT NULL,
+    "plan_id" INTEGER NOT NULL,
+    "status" "public"."FeatureStatus" NOT NULL,
+
+    CONSTRAINT "feature_plans_pkey" PRIMARY KEY ("feature_id","plan_id")
 );
 
 -- CreateIndex
@@ -200,6 +230,9 @@ CREATE INDEX "media_assets_user_id_type_idx" ON "public"."media_assets"("user_id
 -- CreateIndex
 CREATE UNIQUE INDEX "media_assets_bucket_object_key_key" ON "public"."media_assets"("bucket", "object_key");
 
+-- CreateIndex
+CREATE UNIQUE INDEX "features_name_key" ON "public"."features"("name");
+
 -- AddForeignKey
 ALTER TABLE "public"."plan_entitlements" ADD CONSTRAINT "plan_entitlements_plan_id_fkey" FOREIGN KEY ("plan_id") REFERENCES "public"."plans"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
@@ -234,6 +267,9 @@ ALTER TABLE "public"."jobs" ADD CONSTRAINT "jobs_source_asset_id_fkey" FOREIGN K
 ALTER TABLE "public"."jobs" ADD CONSTRAINT "jobs_target_asset_id_fkey" FOREIGN KEY ("target_asset_id") REFERENCES "public"."media_assets"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "public"."jobs" ADD CONSTRAINT "jobs_audio_asset_id_fkey" FOREIGN KEY ("audio_asset_id") REFERENCES "public"."media_assets"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "public"."jobs" ADD CONSTRAINT "jobs_output_asset_id_fkey" FOREIGN KEY ("output_asset_id") REFERENCES "public"."media_assets"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
@@ -241,3 +277,9 @@ ALTER TABLE "public"."job_events" ADD CONSTRAINT "job_events_job_id_fkey" FOREIG
 
 -- AddForeignKey
 ALTER TABLE "public"."media_assets" ADD CONSTRAINT "media_assets_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."feature_plans" ADD CONSTRAINT "feature_plans_feature_id_fkey" FOREIGN KEY ("feature_id") REFERENCES "public"."features"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."feature_plans" ADD CONSTRAINT "feature_plans_plan_id_fkey" FOREIGN KEY ("plan_id") REFERENCES "public"."plans"("id") ON DELETE RESTRICT ON UPDATE CASCADE;

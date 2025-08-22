@@ -11,9 +11,11 @@ import { APP_GUARD } from '@nestjs/core';
 import { JwtAuthGuard } from './auth/jwt-auth.guard';
 import { RolesGuard } from './common/guards/roles.guard';
 import { UserController } from './user/user.controller';
+import { PlansModule } from './plans/plans.module';
+import { FeaturesModule } from './features/features.module';
 
 @Module({
-  imports: [UserModule, PrismaModule, AuthModule, ConfigModule.forRoot({ isGlobal: true}), FilesModule, FusionModule],
+  imports: [UserModule, PrismaModule, AuthModule, ConfigModule.forRoot({ isGlobal: true}), FilesModule, FusionModule, PlansModule, FeaturesModule],
   controllers: [AppController],
   providers: [
     AppService,

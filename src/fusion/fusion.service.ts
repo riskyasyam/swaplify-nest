@@ -1,7 +1,7 @@
 import { Injectable, HttpException } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { S3Service } from 'src/files/s3.service';
-import { JobStatus, JobType, MediaType } from '@prisma/client';
+import { JobStatus, MediaType } from '@prisma/client';
 import fetch from 'node-fetch';
 
 type CreateJobDto = {
@@ -23,7 +23,6 @@ export class FusionService {
     private s3: S3Service,
   ) {}
 
-  /** Pastikan ada usage row utk bulan berjalan */
   private async ensureUsageCounter(userId: string) {
     const { start, end } = monthRange();
     await this.prisma.usageCounter.upsert({
@@ -35,7 +34,6 @@ export class FusionService {
     });
   }
 
-  /** Tambah pemakaian (jobsTotal) bulan berjalan */
   private async incUsage(userId: string, n = 1) {
     const { start, end } = monthRange();
     await this.prisma.usageCounter.upsert({
@@ -78,7 +76,6 @@ export class FusionService {
     const job = await this.prisma.job.create({
       data: {
         userId,
-        jobType: JobType.IMAGE_SWAP, // untuk video, set VIDEO_SWAP
         status: JobStatus.QUEUED,
         sourceAssetId: source.id,
         targetAssetId: target.id,
