@@ -183,6 +183,7 @@ CREATE TABLE "public"."features" (
     "value" TEXT NOT NULL,
     "type" "public"."FeatureType" NOT NULL,
     "status" "public"."FeatureStatus" NOT NULL,
+    "weight" INTEGER NOT NULL DEFAULT 1,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "features_pkey" PRIMARY KEY ("id")

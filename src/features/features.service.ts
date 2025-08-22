@@ -7,13 +7,14 @@ export class FeaturesService {
   constructor(private prisma: PrismaService) {}
 
   // CREATE (value selalu string; default-kan ke '' bila undefined)
-  create(data: { name: string; value?: string; type: FeatureType; status: FeatureStatus }) {
+  create(data: { name: string; value?: string; type: FeatureType; status: FeatureStatus; weight: number }) {
     return this.prisma.feature.create({
       data: {
         name: data.name,
         value: data.value ?? '',     // ← Opsi A: fallback ke string kosong
         type: data.type,
         status: data.status,
+        weight: data.weight
       },
     });
   }
@@ -74,6 +75,7 @@ export class FeaturesService {
       value?: string;
       type?: FeatureType;
       status?: FeatureStatus;
+      weight?: number;
     },
   ) {
     return this.prisma.feature.update({

@@ -269,6 +269,7 @@ model Feature {
   value     String
   type      FeatureType
   status    FeatureStatus
+  weight    Int           @default(1)
   createdAt DateTime      @default(now()) @map("created_at")
 
   plans FeaturePlan[]

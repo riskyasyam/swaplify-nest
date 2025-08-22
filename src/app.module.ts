@@ -5,17 +5,16 @@ import { UserModule } from './user/user.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { AuthModule } from './auth/auth.module';
 import { ConfigModule } from '@nestjs/config';
-import { FilesModule } from './files/files.module';
-import { FusionModule } from './fusion/fusion.module';
 import { APP_GUARD } from '@nestjs/core';
 import { JwtAuthGuard } from './auth/jwt-auth.guard';
 import { RolesGuard } from './common/guards/roles.guard';
 import { UserController } from './user/user.controller';
 import { PlansModule } from './plans/plans.module';
 import { FeaturesModule } from './features/features.module';
+import { S3Module } from './storage/s3.module';
 
 @Module({
-  imports: [UserModule, PrismaModule, AuthModule, ConfigModule.forRoot({ isGlobal: true}), FilesModule, FusionModule, PlansModule, FeaturesModule],
+  imports: [UserModule, PrismaModule, AuthModule, ConfigModule.forRoot({ isGlobal: true}), PlansModule, FeaturesModule, S3Module],
   controllers: [AppController],
   providers: [
     AppService,

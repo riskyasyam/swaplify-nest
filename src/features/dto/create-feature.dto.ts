@@ -1,4 +1,4 @@
-import { IsEnum, IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import { IsEnum, IsInt, IsNotEmpty, IsOptional, IsString } from 'class-validator';
 import { FeatureStatus, FeatureType } from '@prisma/client';
 
 export class CreateFeatureDto {
@@ -13,4 +13,7 @@ export class CreateFeatureDto {
 
   @IsEnum(FeatureStatus)
   status!: FeatureStatus;       // 'ACTIVE' | 'INACTIVE'
+
+  @IsInt() @IsNotEmpty()
+  weight!: number;
 }
