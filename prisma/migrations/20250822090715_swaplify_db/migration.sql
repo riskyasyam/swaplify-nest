@@ -129,6 +129,7 @@ CREATE TABLE "public"."jobs" (
     "user_id" UUID NOT NULL,
     "processors" TEXT[],
     "options" JSONB,
+    "weight_used" INTEGER NOT NULL,
     "source_asset_id" UUID,
     "target_asset_id" UUID,
     "audio_asset_id" UUID,

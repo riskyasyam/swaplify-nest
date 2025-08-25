@@ -1,21 +1,17 @@
-import { Injectable, BadRequestException, Inject } from '@nestjs/common';
+import { Injectable, Inject, BadRequestException } from '@nestjs/common';
+import type { Express } from 'express';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { PutObjectCommand } from '@aws-sdk/client-s3';
+import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { createHash } from 'crypto';
-import * as path from 'path';
 import sharp from 'sharp';
-import * as mm from 'music-metadata'; // audio metadata
-import * as cp from 'child_process'; // ffprobe untuk video
-import { promisify } from 'util';
+import * as mm from 'music-metadata';
 import { MediaType } from '@prisma/client';
-
-const exec = promisify(cp.exec);
 
 @Injectable()
 export class MediaAssetsService {
   constructor(
     private readonly prisma: PrismaService,
-    @Inject('S3') private readonly s3: any,
+    @Inject('S3') private readonly s3: S3Client,
   ) {}
 
   private detectExt(mime: string) {
@@ -30,22 +26,46 @@ export class MediaAssetsService {
     return map[mime] ?? 'bin';
   }
 
-  async createFromUpload(params: { file: Express.Multer.File; type: MediaType }) {
-    const { file, type } = params;
-    const bucket = process.env.S3_INPUT_BUCKET!;
+  // ⬇️ sekarang menerima userId
+  async createFromUpload(params: { userId: string; file: Express.Multer.File; type: MediaType }) {
+    const { userId, file, type } = params;
+    
+    // Validate userId exists
+    if (!userId) {
+      throw new BadRequestException('userId is required');
+    }
+    
+    // Check if user exists in database
+    const userExists = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true }
+    });
+    
+    if (!userExists) {
+      throw new BadRequestException(`User with id ${userId} not found`);
+    }
+
+    if (!userId) throw new BadRequestException('userId is required');
+    if (!file?.buffer?.length) throw new BadRequestException('file buffer is empty');
+
+    const bucket = process.env.S3_INPUT_BUCKET;
+    if (!bucket) throw new Error('S3_INPUT_BUCKET env is missing');
+
     const ext = this.detectExt(file.mimetype);
     const objectKey = `${type.toLowerCase()}/${Date.now()}-${cryptoRandom(6)}.${ext}`;
 
     // hash sha256
     const sha256 = createHash('sha256').update(file.buffer).digest('hex');
 
-    // upload ke S3
-    await this.s3.send(new PutObjectCommand({
-      Bucket: bucket,
-      Key: objectKey,
-      Body: file.buffer,
-      ContentType: file.mimetype,
-    }));
+    // upload ke S3 / MinIO
+    await this.s3.send(
+      new PutObjectCommand({
+        Bucket: bucket,
+        Key: objectKey,
+        Body: file.buffer,
+        ContentType: file.mimetype,
+      }),
+    );
 
     // metadata dasar
     let width: number | null = null;
@@ -57,22 +77,24 @@ export class MediaAssetsService {
         const meta = await sharp(file.buffer).metadata();
         width = meta.width ?? null;
         height = meta.height ?? null;
-      } catch {}
+      } catch {
+        /* ignore */
+      }
     } else if (type === 'AUDIO') {
       try {
         const meta = await mm.parseBuffer(file.buffer, file.mimetype);
         durationSec = meta.format.duration ? Math.round(meta.format.duration) : null;
-      } catch {}
-    } else if (type === 'VIDEO') {
-      // Cara cepat (akurasi baik) pakai ffprobe, tapi perlu file di disk.
-      // Simpan sementara:
-      // NOTE: bisa juga skip kalau tidak butuh duration.
-      // (implementasi opsional)
+      } catch {
+        /* ignore */
+      }
     }
+    // VIDEO: kalau mau akurat bisa pakai ffprobe; untuk sekarang skip
 
+    // simpan ke DB
+    console.log('Creating media asset for userId:', userId);
     const asset = await this.prisma.mediaAsset.create({
       data: {
-        userId: /* ambil dari req.user.id */ 'REPLACE_ME',
+        userId,
         type,
         bucket,
         objectKey,

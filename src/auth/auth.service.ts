@@ -78,15 +78,39 @@ export class AuthService {
 
   private async fetchUserInfo(accessToken?: string): Promise<any> {
     if (!accessToken) return {};
+    
+    console.log('AuthService: Fetching userinfo with token:', accessToken.substring(0, 20) + '...');
+    
+    // Try /me endpoint first (should work for current user)
+    try {
+      const { data: meData } = await axios.get(
+        `${process.env.PRIMEAUTH_AUTH_SERVICE_URL}/api/v1/users/me`,
+        { headers: { Authorization: `Bearer ${accessToken}` }, timeout: 7000 },
+      );
+      console.log('AuthService: /me endpoint response:', meData);
+      if (meData?.data) return meData.data;
+      if (meData) return meData;
+    } catch (e: any) {
+      console.log('AuthService: /me endpoint failed:', e.response?.status, e.response?.data || e.message);
+    }
+    
+    // Fallback to userinfo endpoint
     try {
       const { data } = await axios.get(
         `${process.env.PRIMEAUTH_AUTH_SERVICE_URL}/realms/${process.env.REALM_ID}/protocol/openid-connect/userinfo`,
         { headers: { Authorization: `Bearer ${accessToken}` }, timeout: 7000 },
       );
-      return data ?? {};
-    } catch {
+      console.log('AuthService: userinfo endpoint response:', data);
+      return data?.data || data || {};
+    } catch (e: any) {
+      console.log('AuthService: userinfo endpoint failed:', e.response?.status, e.response?.data || e.message);
       return {};
     }
+  }
+
+  // Public method untuk digunakan oleh guard
+  async getUserInfo(accessToken: string): Promise<any> {
+    return this.fetchUserInfo(accessToken);
   }
 
   private async fetchIdentityUser(sub: string, accessToken?: string): Promise<any> {
@@ -136,15 +160,16 @@ export class AuthService {
       `${sub}@${process.env.PLACEHOLDER_EMAIL_DOMAIN ?? 'no-email.local'}`;
 
     const displayName =
+      this.nz(`${ui.first_name ?? ''} ${ui.last_name ?? ''}`.trim()) ??
+      this.nz(ui.username) ??
       this.nz(ui.name) ??
-      this.nz(`${ui.given_name ?? ''} ${ui.family_name ?? ''}`) ??
       this.nz(ui.preferred_username) ??
       this.nz(id.full_name) ??
       this.nz(id.name) ??
       this.nz(id.username) ??
       this.nz(claims.name) ??
       this.nz(claims.preferred_username) ??
-      sub;
+      `User-${sub.slice(-8)}`; // Lebih user-friendly daripada UUID penuh
 
     // --- Penting: JANGAN overwrite role dari claims saat update ---
     // 1) cek apakah user sudah ada

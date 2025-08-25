@@ -191,6 +191,7 @@ model Job {
 
   processors String[] @map("processors") //contoh : array ["face_swapper", "face_enhancer"]
   options     Json?    @map("options") //contoh : {"faceSwap": {"model": "v1", "threshold": 0.8}}
+  weightUsed Int @map("weight_used")
 
   sourceAssetId String? @map("source_asset_id") @db.Uuid
   targetAssetId String? @map("target_asset_id") @db.Uuid

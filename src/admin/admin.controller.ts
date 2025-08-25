@@ -3,6 +3,7 @@ import { AdminService } from './admin.service';
 import { AuthGuard } from '@nestjs/passport';
 import { Roles } from 'src/common/decorators/roles.decorator';
 import { Role } from '@prisma/client';
+import { PrimeAuthIntrospectionGuard } from 'src/auth/primeauth-introspection.guard';
 
 class CreatePrimeUserDto {
   email!: string;
@@ -12,8 +13,7 @@ class CreatePrimeUserDto {
 }
 
 @Controller('admin')
-@UseGuards(AuthGuard('jwt'))
-@Roles('ADMIN')
+@UseGuards(PrimeAuthIntrospectionGuard)
 export class AdminController {
   constructor(private service: AdminService) {}
 

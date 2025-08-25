@@ -1,5 +1,7 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
+import { Role } from '@prisma/client';
+import { UpdateUserSubscriptionDto, UpdateUserRoleDto, UpdateUserProfileDto } from './dto/update-user-subscription.dto';
 
 function monthRange(d = new Date()) {
   const start = new Date(d.getFullYear(), d.getMonth(), 1);
@@ -85,5 +87,169 @@ export class UserService {
 
   async deleteUser(id: string) {
     return this.prisma.user.delete({ where: { id } });
+  }
+
+  // ============= CRUD SUBSCRIPTION MANAGEMENT =============
+
+  /**
+   * Update user subscription plan
+   */
+  async updateUserSubscription(userId: string, dto: UpdateUserSubscriptionDto) {
+    // Check if user exists
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new NotFoundException('User not found');
+
+    // Support both 'plan' and 'planCode' fields
+    const planCode = dto.plan || dto.planCode;
+    if (!planCode) {
+      throw new BadRequestException('Either plan or planCode must be provided');
+    }
+
+    // Check if plan exists
+    const plan = await this.prisma.plan.findUnique({ where: { code: planCode } });
+    if (!plan) throw new BadRequestException(`Plan ${planCode} not found`);
+
+    // Update subscription status if provided
+    const updateData: any = {};
+    if (dto.status) {
+      updateData.status = dto.status;
+      if (dto.status === 'CANCELLED' || dto.status === 'PAST_DUE') {
+        updateData.currentEnd = new Date();
+      }
+    }
+
+    // End current active subscription if changing plan
+    await this.prisma.subscription.updateMany({
+      where: { userId, status: 'ACTIVE', currentEnd: null },
+      data: { status: 'CANCELLED', currentEnd: new Date() }
+    });
+
+    // Create new subscription
+    const newSubscription = await this.prisma.subscription.create({
+      data: {
+        userId,
+        planId: plan.id,
+        status: dto.status || 'ACTIVE',
+        currentStart: new Date(),
+        currentEnd: dto.status === 'CANCELLED' || dto.status === 'PAST_DUE' ? new Date() : null,
+        billingRef: dto.billingRef || null,
+      },
+      include: {
+        plan: {
+          include: {
+            entitlements: {
+              orderBy: { version: 'desc' },
+              take: 1
+            }
+          }
+        }
+      }
+    });
+
+    return {
+      message: `User subscription updated to ${dto.planCode}`,
+      subscription: newSubscription
+    };
+  }
+
+  /**
+   * Update user role (ADMIN only)
+   */
+  async updateUserRole(userId: string, dto: UpdateUserRoleDto) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new NotFoundException('User not found');
+
+    const updatedUser = await this.prisma.user.update({
+      where: { id: userId },
+      data: { role: dto.role as Role },
+      select: { id: true, email: true, displayName: true, role: true }
+    });
+
+    return {
+      message: `User role updated to ${dto.role}`,
+      user: updatedUser
+    };
+  }
+
+  /**
+   * Update user profile
+   */
+  async updateUserProfile(userId: string, dto: UpdateUserProfileDto) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new NotFoundException('User not found');
+
+    const updatedUser = await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        ...(dto.email && { email: dto.email }),
+        ...(dto.displayName && { displayName: dto.displayName }),
+      },
+      select: { id: true, email: true, displayName: true, role: true }
+    });
+
+    return {
+      message: 'User profile updated',
+      user: updatedUser
+    };
+  }
+
+  /**
+   * Get user with full subscription details
+   */
+  async getUserWithSubscription(userId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      include: {
+        subscriptions: {
+          where: { status: 'ACTIVE', currentEnd: null },
+          include: {
+            plan: {
+              include: {
+                entitlements: {
+                  orderBy: { version: 'desc' },
+                  take: 1
+                }
+              }
+            }
+          }
+        }
+      }
+    });
+
+    if (!user) throw new NotFoundException('User not found');
+
+    const activeSubscription = user.subscriptions[0] || null;
+    
+    return {
+      id: user.id,
+      email: user.email,
+      displayName: user.displayName,
+      role: user.role,
+      createdAt: user.createdAt,
+      subscription: activeSubscription ? {
+        id: activeSubscription.id,
+        planCode: activeSubscription.plan.code,
+        planName: activeSubscription.plan.name,
+        status: activeSubscription.status,
+        currentStart: activeSubscription.currentStart,
+        billingRef: activeSubscription.billingRef,
+        entitlements: activeSubscription.plan.entitlements[0]?.entitlements || null
+      } : null
+    };
+  }
+
+  /**
+   * Get all available plans
+   */
+  async getAllPlans() {
+    return this.prisma.plan.findMany({
+      include: {
+        entitlements: {
+          orderBy: { version: 'desc' },
+          take: 1
+        }
+      },
+      orderBy: { priority: 'asc' }
+    });
   }
 }

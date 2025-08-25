@@ -12,14 +12,26 @@ import { UserController } from './user/user.controller';
 import { PlansModule } from './plans/plans.module';
 import { FeaturesModule } from './features/features.module';
 import { S3Module } from './storage/s3.module';
+import { JobsModule } from './jobs/jobs.module';
+import { MediaAssetsModule } from './media-assets/media-assets.module';
+import { PrimeAuthIntrospectionGuard } from './auth/primeauth-introspection.guard';
 
 @Module({
-  imports: [UserModule, PrismaModule, AuthModule, ConfigModule.forRoot({ isGlobal: true}), PlansModule, FeaturesModule, S3Module],
+  imports: [
+    UserModule, 
+    PrismaModule, 
+    AuthModule, 
+    ConfigModule.forRoot({ isGlobal: true }), 
+    PlansModule, 
+    FeaturesModule, 
+    S3Module, 
+    JobsModule, 
+    MediaAssetsModule],
   controllers: [AppController],
   providers: [
     AppService,
-    { provide: APP_GUARD, useClass: JwtAuthGuard },
+    { provide: APP_GUARD, useClass: PrimeAuthIntrospectionGuard },
     { provide: APP_GUARD, useClass: RolesGuard },
   ],
 })
-export class AppModule {}
+export class AppModule { }
