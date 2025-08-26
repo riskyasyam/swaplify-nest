@@ -111,6 +111,32 @@ export class MediaAssetsService {
 
     return asset;
   }
+
+  /**
+   * Find media asset by ID (for internal use)
+   */
+  async findById(assetId: string) {
+    const asset = await this.prisma.mediaAsset.findUnique({
+      where: { id: assetId },
+      select: {
+        id: true,
+        bucket: true,
+        objectKey: true,
+        type: true,
+        mimeType: true,
+        width: true,
+        height: true,
+        durationSec: true,
+        path: true
+      }
+    });
+
+    if (!asset) {
+      throw new BadRequestException(`Asset with id ${assetId} not found`);
+    }
+
+    return asset;
+  }
 }
 
 function cryptoRandom(len = 6) {

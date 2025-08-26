@@ -8,6 +8,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { JobStatus } from '@prisma/client';
 import { PlanEntitlementValues } from '../plans/plan-entitlements.type';
 import { QuotaService } from '../common/subscription/quota.service';
+import { NsqService } from '../nsq/nsq.service';
 
 interface CreateJobInput {
   userId: string;
@@ -23,6 +24,7 @@ export class JobsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly quota: QuotaService,
+    private readonly nsq: NsqService,
   ) {}
 
   /**
@@ -123,6 +125,7 @@ export class JobsService {
     }
 
     // 8. Simpan Job
+    console.log('🔄 Creating job in database...');
     const job = await this.prisma.job.create({
       data: {
         userId,
@@ -135,13 +138,35 @@ export class JobsService {
         status: JobStatus.QUEUED,
       },
     });
+    console.log(`✅ Job created successfully with ID: ${job.id}`);
 
     // 9. Update usage
+    console.log('🔄 Updating usage counter...');
     await this.prisma.usageCounter.update({
       where: { userId_periodStart_periodEnd: { userId, periodStart, periodEnd } },
       data: { jobsTotal: { increment: jobWeight } },
     });
+    console.log('✅ Usage counter updated');
 
+    // 10. Publish job to NSQ
+    console.log(`🚦 Attempting to publish job ${job.id} to NSQ...`);
+    try {
+      await this.nsq.publishJob('facefusion_jobs', {
+        jobId: job.id,
+        userId: job.userId,
+        sourceAssetId: job.sourceAssetId,
+        targetAssetId: job.targetAssetId,
+        audioAssetId: job.audioAssetId,
+        processors: job.processors,
+        options: job.options,
+      });
+      console.log(`✅ Published job ${job.id} to NSQ topic 'facefusion_jobs'`);
+    } catch (err) {
+      console.error(`❌ Failed to publish job ${job.id} to NSQ:`, err);
+      console.error('❌ NSQ Error details:', err.message);
+    }
+
+    console.log(`🎯 Job ${job.id} creation process completed`);
     return job;
   }
 
@@ -630,6 +655,111 @@ export class JobsService {
     };
     
     return modelMap[model || 'v1'] || 'inswapper_128';
+  }
+
+  /**
+   * Handle worker callback (unified for success/error)
+   */
+  async handleWorkerCallback(jobId: string, payload: { status: string; progressPct?: number; outputKey?: string; errorMessage?: string }) {
+    const { status, progressPct, outputKey, errorMessage } = payload;
+    
+    console.log(`🔄 Processing worker callback for job ${jobId}:`, payload);
+    
+    try {
+      const updateData: any = {
+        status,
+        progressPct: progressPct ?? null,
+        finishedAt: new Date()
+      };
+      
+      // Handle success case
+      if (status === 'SUCCEEDED' && outputKey) {
+        console.log(`📝 Creating output asset for job ${jobId} with key: ${outputKey}`);
+        
+        const job = await this.prisma.job.findUnique({
+          where: { id: jobId },
+          include: { targetAsset: true }
+        });
+        
+        if (!job?.targetAsset) {
+          throw new Error(`Job ${jobId} or target asset not found`);
+        }
+        
+        // Create output asset
+        const outputAsset = await this.prisma.mediaAsset.create({
+          data: {
+            userId: job.userId,
+            type: job.targetAsset.type,
+            bucket: 'facefusion-output',
+            objectKey: outputKey,
+            path: `facefusion-output/${outputKey}`,
+            mimeType: job.targetAsset.type === 'VIDEO' ? 'video/mp4' : 'image/jpeg',
+            sizeBytes: BigInt(5000000), // Placeholder
+            width: job.targetAsset.width,
+            height: job.targetAsset.height,
+            durationSec: job.targetAsset.durationSec,
+            sha256: `ff_output_${Date.now()}_${Math.random().toString(36).slice(2)}`
+          }
+        });
+        
+        updateData.outputAssetId = outputAsset.id;
+        console.log(`✅ Output asset created: ${outputAsset.id}`);
+      }
+      
+      // Handle error case
+      if (status === 'FAILED' && errorMessage) {
+        updateData.errorCode = 'FACEFUSION_ERROR';
+        updateData.errorMessage = errorMessage;
+        console.log(`❌ Job ${jobId} failed: ${errorMessage}`);
+      }
+      
+      // Update job
+      const updatedJob = await this.prisma.job.update({
+        where: { id: jobId },
+        data: updateData,
+        include: {
+          sourceAsset: true,
+          targetAsset: true,
+          audioAsset: true,
+          outputAsset: true
+        }
+      });
+      
+      console.log(`✅ Job ${jobId} updated to status: ${status}`);
+      return this.serializeJobResponse(updatedJob);
+      
+    } catch (error) {
+      console.error(`❌ Error handling worker callback for job ${jobId}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Update job status (for internal use)
+   */
+  async updateJobStatus(jobId: string, status: string, progressPct?: number) {
+    console.log(`🔄 Updating job ${jobId} status to ${status}, progress: ${progressPct}%`);
+    
+    const updateData: any = { status };
+    if (progressPct !== undefined) {
+      updateData.progressPct = progressPct;
+    }
+    if (status === 'RUNNING' && progressPct === undefined) {
+      updateData.startedAt = new Date();
+    }
+    
+    const updatedJob = await this.prisma.job.update({
+      where: { id: jobId },
+      data: updateData,
+      include: {
+        sourceAsset: true,
+        targetAsset: true,
+        audioAsset: true,
+        outputAsset: true
+      }
+    });
+    
+    return this.serializeJobResponse(updatedJob);
   }
 
   /**

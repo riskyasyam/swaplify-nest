@@ -1,6 +1,6 @@
 import {
   Controller, Post, UseInterceptors, UploadedFile, Body,
-  BadRequestException, Req, UseGuards,
+  BadRequestException, Req, UseGuards, Get, Param,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import type { Express } from 'express';
@@ -8,6 +8,7 @@ import { MediaAssetsService } from './media-assets.service';
 import { MediaType } from '@prisma/client';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { PrimeAuthIntrospectionGuard } from 'src/auth/primeauth-introspection.guard';
+import { Public } from 'src/common/decorators/public.decorator';
 
 class CreateAssetDto {
   type!: MediaType; // 'IMAGE' | 'VIDEO' | 'AUDIO'
@@ -36,5 +37,18 @@ export class MediaAssetsController {
       file,
       type: dto.type,
     });
+  }
+
+  // GET /media-assets/:id - Get asset details (for internal use)
+  @Public()
+  @Get(':id')
+  async getAssetById(@Param('id') assetId: string, @Req() req: any) {
+    // Validasi internal secret
+    const internalSecret = req.headers['x-internal-secret'];
+    if (internalSecret !== process.env.INTERNAL_SECRET) {
+      throw new BadRequestException('Invalid internal secret');
+    }
+    
+    return this.svc.findById(assetId);
   }
 }

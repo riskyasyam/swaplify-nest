@@ -8,34 +8,35 @@ import { UpsertEntitlementDto } from './dto/upsert-entitlement.dto';
 import { LinkFeatureDto, FeatureStatusDto } from './dto/link-feature.dto';
 import { FeatureStatus } from '@prisma/client';
 import { Public } from 'src/common/decorators/public.decorator';
+import { Roles } from 'src/common/decorators/roles.decorator';
 
 @Controller('plans')
 export class PlansController {
   constructor(private readonly svc: PlansService) {}
 
   // CREATE
-  @Public()
+  @Roles('ADMIN')
   @Post()
   create(@Body() dto: CreatePlanDto) {
     return this.svc.create(dto);
   }
 
   // LIST
-  @Public()
+  @Roles('ADMIN')
   @Get()
   findAll(@Query('q') q?: string, @Query('skip') skip = '0', @Query('take') take = '20') {
     return this.svc.findAll({ q, skip: Number(skip), take: Number(take) });
   }
 
   // DETAIL
-  @Public()
+  @Roles('ADMIN')
   @Get(':id')
   findOne(@Param('id', ParseIntPipe) id: number) {
     return this.svc.findOne(id);
   }
 
   // UPDATE
-  @Public()
+  @Roles('ADMIN')
   @Patch(':id')
   update(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdatePlanDto) {
     return this.svc.update(id, dto);

@@ -13,6 +13,7 @@ import { PlansModule } from './plans/plans.module';
 import { FeaturesModule } from './features/features.module';
 import { S3Module } from './storage/s3.module';
 import { JobsModule } from './jobs/jobs.module';
+import { NsqModule } from './nsq/nsq.module';
 import { MediaAssetsModule } from './media-assets/media-assets.module';
 import { PrimeAuthIntrospectionGuard } from './auth/primeauth-introspection.guard';
 
@@ -25,8 +26,10 @@ import { PrimeAuthIntrospectionGuard } from './auth/primeauth-introspection.guar
     PlansModule, 
     FeaturesModule, 
     S3Module, 
-    JobsModule, 
-    MediaAssetsModule],
+    JobsModule,
+    MediaAssetsModule,
+    NsqModule
+  ],
   controllers: [AppController],
   providers: [
     AppService,

@@ -1,6 +1,6 @@
 import {
   Controller, Post, Body, Req, BadRequestException,
-  UseInterceptors, UploadedFiles, Get, Param
+  UseInterceptors, UploadedFiles, Get, Param, Patch
 } from '@nestjs/common';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import type { Express } from 'express';
@@ -43,6 +43,24 @@ export class JobsController {
     return this.jobs.processJobDirectly(jobId, req.user.id);
   }
 
+  // PATCH /jobs/:id/callback - Callback dari FastAPI worker
+  @Public()
+  @Patch(':id/callback')
+  async handleWorkerCallback(
+    @Param('id') jobId: string,
+    @Body() payload: { status: string; progressPct?: number; outputKey?: string; errorMessage?: string },
+    @Req() req: any
+  ) {
+    // Validasi worker secret
+    const workerSecret = req.headers['x-worker-secret'];
+    if (workerSecret !== process.env.WORKER_SHARED_SECRET) {
+      throw new BadRequestException('Invalid worker secret');
+    }
+    
+    console.log(`📞 Worker callback for job ${jobId}:`, payload);
+    return this.jobs.handleWorkerCallback(jobId, payload);
+  }
+
   // POST /jobs/facefusion/:id/callback/done - Callback dari FastAPI worker (SUCCESS)
   @Public() // ✅ Allow callback without authentication
   @Post('facefusion/:id/callback/done')
@@ -75,6 +93,26 @@ export class JobsController {
     }
     
     return this.jobs.handleFaceFusionFailure(jobId, payload.error);
+  }
+
+  // POST /jobs/:id/internal-status - Internal status update (from queue service)
+  @Public()
+  @Post(':id/internal-status')
+  async updateJobStatusInternal(
+    @Param('id') jobId: string,
+    @Body() payload: { status: string; progressPct?: number },
+    @Req() req: any
+  ) {
+    // Validasi internal secret
+    const internalSecret = req.headers['x-internal-secret'];
+    if (internalSecret !== process.env.INTERNAL_SECRET) {
+      throw new BadRequestException('Invalid internal secret');
+    }
+    
+    console.log(`🔄 Internal status update for job ${jobId}:`, payload);
+    
+    const updatedJob = await this.jobs.updateJobStatus(jobId, payload.status, payload.progressPct);
+    return { success: true, job: updatedJob };
   }
 
   // POST /jobs/:id/manual-complete - Manual completion untuk stuck jobs (DEBUG)
@@ -198,7 +236,7 @@ export class JobsController {
       catch { throw new BadRequestException('options must be a JSON object string'); }
     }
 
-    // Create job
+    // Create job dan publish ke NSQ (tidak langsung process)
     const job = await this.jobs.create({
       userId,
       sourceAssetId: s.id,
@@ -208,7 +246,12 @@ export class JobsController {
       options,
     });
 
-    // Process job langsung sampai selesai
-    return this.jobs.processJobDirectly(job.id, userId);
+    console.log(`📤 Job ${job.id} created and sent to NSQ queue for processing`);
+    
+    // Return job yang sudah dibuat (status QUEUED)
+    return {
+      ...job,
+      message: 'Job created and sent to queue for processing'
+    };
   }
 }

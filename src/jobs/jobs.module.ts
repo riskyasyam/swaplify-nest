@@ -4,9 +4,10 @@ import { JobsController } from './jobs.controller';
 import { PrismaModule } from '../prisma/prisma.module';
 import { MediaAssetsModule } from 'src/media-assets/media-assets.module';
 import { SubscriptionModule } from 'src/common/subscription/subscription.module';
+import { NsqModule } from '../nsq/nsq.module';
 
 @Module({
-  imports: [PrismaModule, MediaAssetsModule, SubscriptionModule],
+  imports: [PrismaModule, MediaAssetsModule, SubscriptionModule, NsqModule],
   controllers: [JobsController],
   providers: [JobsService],
   exports: [JobsService], // kalau mau dipakai di module lain
