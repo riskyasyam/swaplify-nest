@@ -1,0 +1,712 @@
+{
+	"info": {
+		"_postman_id": "38caa564-d37a-439f-8959-b6dcef44352f",
+		"name": "BE Nest",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "30815068"
+	},
+	"item": [
+		{
+			"name": "User",
+			"item": [
+				{
+					"name": "Get User",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{bearer_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:3000/user",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"user"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "User Subscription",
+			"item": [
+				{
+					"name": "UPDATE Subscription to User",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{bearer_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"plan\": \"PREMIUM\",\r\n  \"status\": \"ACTIVE\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:3000/user/113ccfa7-7bdc-4b35-88b6-e78db4f0293d/subscription",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"user",
+								"113ccfa7-7bdc-4b35-88b6-e78db4f0293d",
+								"subscription"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "GET Plan Entitlements",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{bearer_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "http://localhost:3000/user/113ccfa7-7bdc-4b35-88b6-e78db4f0293d/quota",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"user",
+								"113ccfa7-7bdc-4b35-88b6-e78db4f0293d",
+								"quota"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Login PrimeAuth",
+			"item": [
+				{
+					"name": "Refresh Token",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{bearer_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"refresh_token\":\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjbGllbnRfaWQiOiJwcmltZWF1dGgtYWRtaW4iLCJleHAiOjE3NTU4Mzg5NjgsImlhdCI6MTc1NTc1MjU2OCwicmVhbG1faWQiOiI4OTMwZWY3NC1iNmNmLTQ2NWEtOWE3NC04ZjljYzU5MWMzZTMiLCJzY29wZSI6Im9wZW5pZCBwcm9maWxlIGVtYWlsIiwic3ViIjoiNjBlOTkyOWUtNmUzMC00MzFjLTlmMWItNTI5YjYxODY3NzU5IiwidG9rZW5fdHlwZSI6InJlZnJlc2gifQ.QAUGFrpLGx1Is-BgXYkLxztq4OPV2CYpOGJ-cPpsZbQ\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:3000/auth/prime/refresh",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"auth",
+								"prime",
+								"refresh"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Logout",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{bearer_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\"refresh_token\":\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjbGllbnRfaWQiOiJwcmltZWF1dGgtYWRtaW4iLCJleHAiOjE3NTU3NTcyMDYsImlhdCI6MTc1NTY3MDgwNiwicmVhbG1faWQiOiI4OTMwZWY3NC1iNmNmLTQ2NWEtOWE3NC04ZjljYzU5MWMzZTMiLCJzY29wZSI6Im9wZW5pZCBwcm9maWxlIGVtYWlsIiwic3ViIjoiNjBlOTkyOWUtNmUzMC00MzFjLTlmMWItNTI5YjYxODY3NzU5IiwidG9rZW5fdHlwZSI6InJlZnJlc2gifQ.CjY0-3oagQdzfUQH69zxUYd-oH1TejtifNIefSpkl8Q\"}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:3000/auth/prime/logout",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"auth",
+								"prime",
+								"logout"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Plan",
+			"item": [
+				{
+					"name": "CREATE Plans",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"code\":\"PROFESSIONAL\",\r\n    \"name\":\"Professional\",\r\n    \"priority\":20\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:3000/plans",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"plans"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "READ Plans",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{bearer_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:3000/plans",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"plans"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "UPDATE Plans",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"code\": \"Professional Plus\",\r\n    \"name\":\"Pro Plus\",\r\n    \"priority\":30\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:3000/plans/4",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"plans",
+								"4"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Plan Entitlements",
+			"item": [
+				{
+					"name": "UPSERT Entitlements",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"version\":3,\r\n    \"max_video_sec\":120,\r\n    \"max_resolution\":\"1080p\",\r\n    \"concurrency\":1,\r\n    \"watermark\":false\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:3000/plans/4/entitlements",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"plans",
+								"4",
+								"entitlements"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "READ ID with Entitlements",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:3000/plans/1",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"plans",
+								"1"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Feature",
+			"item": [
+				{
+					"name": "CREATE Feature",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"name\":\"facafaceeeeee\",\r\n    \"value\":\"enabled\",\r\n    \"type\":\"processor\",\r\n    \"status\":\"ACTIVE\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:3000/features",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"features"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "READ All Features",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:3000/features",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"features"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "UPDATE Features",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"name\":\"faceASYAAAAAAAM\",\r\n    \"value\":\"enabled\",\r\n    \"type\":\"processor\",\r\n    \"status\":\"ACTIVE\"\r\n}"
+						},
+						"url": {
+							"raw": "http://localhost:3000/features/48",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"features",
+								"48"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "DELETE Features",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:3000/features/48",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"features",
+								"48"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Jobs",
+			"item": [
+				{
+					"name": "Uploaded (Step 1)",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjbGllbnRfaWQiOiJwcmltZWF1dGgtYWRtaW4iLCJleHAiOjE3NTYwOTkxMjcsImlhdCI6MTc1NjA5NTUyNywicmVhbG1faWQiOiI4OTMwZWY3NC1iNmNmLTQ2NWEtOWE3NC04ZjljYzU5MWMzZTMiLCJzY29wZSI6Im9wZW5pZCBwcm9maWxlIGVtYWlsIiwic3ViIjoiNjBlOTkyOWUtNmUzMC00MzFjLTlmMWItNTI5YjYxODY3NzU5IiwidG9rZW5fdHlwZSI6ImFjY2VzcyJ9.4fZPi4hEBXBSFdVbHa0gCqFyDpuflripg0SsoejWEU8",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "source",
+									"type": "file",
+									"src": "/C:/Users/Asyam/Documents/asset_post/udin.jpeg"
+								},
+								{
+									"key": "target",
+									"type": "file",
+									"src": "/C:/Users/Asyam/Documents/asset_post/tes video 2 orang.mp4"
+								},
+								{
+									"key": "audio",
+									"type": "file",
+									"src": []
+								},
+								{
+									"key": "processors",
+									"value": "[\"face_swapper\"]",
+									"type": "text"
+								},
+								{
+									"key": "options",
+									"value": "{ \"faceSwap\": { \"model\": \"v1\", \"threshold\": 0.8 } }",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "http://localhost:3000/jobs/uploaded",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"jobs",
+								"uploaded"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Process with ID (Step 2)",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjbGllbnRfaWQiOiJwcmltZWF1dGgtYWRtaW4iLCJleHAiOjE3NTYxMDUyOTQsImlhdCI6MTc1NjEwMTY5NCwicmVhbG1faWQiOiI4OTMwZWY3NC1iNmNmLTQ2NWEtOWE3NC04ZjljYzU5MWMzZTMiLCJzY29wZSI6Im9wZW5pZCBwcm9maWxlIGVtYWlsIiwic3ViIjoiNjBlOTkyOWUtNmUzMC00MzFjLTlmMWItNTI5YjYxODY3NzU5IiwidG9rZW5fdHlwZSI6ImFjY2VzcyJ9.KeRfuiR_NNUpb0BpcZNyUfJLwiQtX4XO7p2KaBCth0Q",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "http://localhost:3000/jobs/cmeqmpfc70001ux844m7e5bia/process",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"jobs",
+								"cmeqmpfc70001ux844m7e5bia",
+								"process"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Upload + Process (1 Step Gabungan)",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "source",
+									"value": "",
+									"type": "text"
+								},
+								{
+									"key": "target",
+									"value": "",
+									"type": "text"
+								},
+								{
+									"key": "audio",
+									"value": "",
+									"type": "text"
+								},
+								{
+									"key": "processors",
+									"value": "",
+									"type": "text"
+								},
+								{
+									"key": "options",
+									"value": "",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "http://localhost:3000/jobs/uploaded-process",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"jobs",
+								"uploaded-process"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Status Job",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{bearer_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:3000/jobs/cmeta8ev20001uxxws0i7lx8i",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"jobs",
+								"cmeta8ev20001uxxws0i7lx8i"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "bearer_token",
+			"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjbGllbnRfaWQiOiJwcmltZWF1dGgtYWRtaW4iLCJleHAiOjE3NTYxMTE3NjMsImlhdCI6MTc1NjEwODE2MywicmVhbG1faWQiOiI4OTMwZWY3NC1iNmNmLTQ2NWEtOWE3NC04ZjljYzU5MWMzZTMiLCJzY29wZSI6Im9wZW5pZCBwcm9maWxlIGVtYWlsIiwic3ViIjoiNjBlOTkyOWUtNmUzMC00MzFjLTlmMWItNTI5YjYxODY3NzU5IiwidG9rZW5fdHlwZSI6ImFjY2VzcyJ9.c5beSBne7szgETYXvGul2IMnBsrcawVG4J_3vUwLnlg",
+			"type": "string"
+		}
+	]
+}
