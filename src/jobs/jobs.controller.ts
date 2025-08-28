@@ -16,6 +16,7 @@ export class JobsController {
     private readonly media: MediaAssetsService,
   ) {}
 
+
   // GET /jobs - Get all jobs for current user
   @Get()
   async getAllJobs(@Req() req: any) {
@@ -23,6 +24,35 @@ export class JobsController {
       throw new BadRequestException('User not authenticated');
     }
     return this.jobs.findAll(req.user.id);
+  }
+
+  // GET /jobs/quota-today - Get user's daily quota usage for today
+  @Get('quota-today')
+  async getQuotaToday(@Req() req: any) {
+    if (!req.user?.id) {
+      throw new BadRequestException('User not authenticated');
+    }
+    // Get today's usage
+    const today = new Date();
+    const periodStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    const periodEnd = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1);
+    const usage = await this.jobs["prisma"].usageCounter.findUnique({
+      where: { userId_periodStart_periodEnd: { userId: req.user.id, periodStart, periodEnd } },
+    });
+    // Get plan's daily quota
+    const subscription = await this.jobs["prisma"].subscription.findFirst({
+      where: { userId: req.user.id, status: 'ACTIVE' },
+      include: { plan: { include: { entitlements: { orderBy: { version: 'desc' }, take: 1 } } } },
+    });
+    const ent = subscription?.plan?.entitlements?.[0]?.entitlements;
+    // ent is JSON, so cast to PlanEntitlementValues
+    const entValues = ent as import('../plans/plan-entitlements.type').PlanEntitlementValues;
+    const dailyQuota = entValues?.daily_weight_quota ?? null;
+    return {
+      jobsTotal: usage?.jobsTotal ?? 0,
+      daily_weight_quota: dailyQuota,
+      remaining: dailyQuota != null ? Math.max(0, dailyQuota - (usage?.jobsTotal ?? 0)) : null
+    };
   }
 
   // GET /jobs/:id - Get specific job by ID

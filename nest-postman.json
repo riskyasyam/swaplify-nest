@@ -25,12 +25,10 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "http://localhost:3000/user",
-							"protocol": "http",
+							"raw": "{{url}}/user",
 							"host": [
-								"localhost"
+								"{{url}}"
 							],
-							"port": "3000",
 							"path": [
 								"user"
 							]
@@ -66,7 +64,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\r\n  \"plan\": \"PREMIUM\",\r\n  \"status\": \"ACTIVE\"\r\n}",
+							"raw": "{\r\n  \"plan\": \"PRO\",\r\n  \"status\": \"ACTIVE\"\r\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -74,15 +72,13 @@
 							}
 						},
 						"url": {
-							"raw": "http://localhost:3000/user/113ccfa7-7bdc-4b35-88b6-e78db4f0293d/subscription",
-							"protocol": "http",
+							"raw": "{{url}}/user/{{user_id}}/subscription",
 							"host": [
-								"localhost"
+								"{{url}}"
 							],
-							"port": "3000",
 							"path": [
 								"user",
-								"113ccfa7-7bdc-4b35-88b6-e78db4f0293d",
+								"{{user_id}}",
 								"subscription"
 							]
 						}
@@ -111,15 +107,13 @@
 							}
 						],
 						"url": {
-							"raw": "http://localhost:3000/user/113ccfa7-7bdc-4b35-88b6-e78db4f0293d/quota",
-							"protocol": "http",
+							"raw": "{{url}}/user/{{user_id}}/quota",
 							"host": [
-								"localhost"
+								"{{url}}"
 							],
-							"port": "3000",
 							"path": [
 								"user",
-								"113ccfa7-7bdc-4b35-88b6-e78db4f0293d",
+								"{{user_id}}",
 								"quota"
 							]
 						}
@@ -162,12 +156,10 @@
 							}
 						},
 						"url": {
-							"raw": "http://localhost:3000/auth/prime/refresh",
-							"protocol": "http",
+							"raw": "{{url}}/auth/prime/refresh",
 							"host": [
-								"localhost"
+								"{{url}}"
 							],
-							"port": "3000",
 							"path": [
 								"auth",
 								"prime",
@@ -208,12 +200,10 @@
 							}
 						},
 						"url": {
-							"raw": "http://localhost:3000/auth/prime/logout",
-							"protocol": "http",
+							"raw": "{{url}}/auth/prime/logout",
 							"host": [
-								"localhost"
+								"{{url}}"
 							],
-							"port": "3000",
 							"path": [
 								"auth",
 								"prime",
@@ -249,12 +239,10 @@
 							}
 						},
 						"url": {
-							"raw": "http://localhost:3000/plans",
-							"protocol": "http",
+							"raw": "{{url}}/plans",
 							"host": [
-								"localhost"
+								"{{url}}"
 							],
-							"port": "3000",
 							"path": [
 								"plans"
 							]
@@ -278,12 +266,10 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "http://localhost:3000/plans",
-							"protocol": "http",
+							"raw": "{{url}}/plans",
 							"host": [
-								"localhost"
+								"{{url}}"
 							],
-							"port": "3000",
 							"path": [
 								"plans"
 							]
@@ -352,12 +338,10 @@
 							}
 						},
 						"url": {
-							"raw": "http://localhost:3000/plans/4/entitlements",
-							"protocol": "http",
+							"raw": "{{url}}/plans/4/entitlements",
 							"host": [
-								"localhost"
+								"{{url}}"
 							],
-							"port": "3000",
 							"path": [
 								"plans",
 								"4",
@@ -370,18 +354,25 @@
 				{
 					"name": "READ ID with Entitlements",
 					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{bearer_token}}",
+									"type": "string"
+								}
+							]
+						},
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "http://localhost:3000/plans/1",
-							"protocol": "http",
+							"raw": "{{url}}/plans",
 							"host": [
-								"localhost"
+								"{{url}}"
 							],
-							"port": "3000",
 							"path": [
-								"plans",
-								"1"
+								"plans"
 							]
 						}
 					},
@@ -413,12 +404,10 @@
 							}
 						},
 						"url": {
-							"raw": "http://localhost:3000/features",
-							"protocol": "http",
+							"raw": "{{url}}/features",
 							"host": [
-								"localhost"
+								"{{url}}"
 							],
-							"port": "3000",
 							"path": [
 								"features"
 							]
@@ -432,12 +421,10 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "http://localhost:3000/features",
-							"protocol": "http",
+							"raw": "{{url}}/features",
 							"host": [
-								"localhost"
+								"{{url}}"
 							],
-							"port": "3000",
 							"path": [
 								"features"
 							]
@@ -461,12 +448,10 @@
 							"raw": "{\r\n    \"name\":\"faceASYAAAAAAAM\",\r\n    \"value\":\"enabled\",\r\n    \"type\":\"processor\",\r\n    \"status\":\"ACTIVE\"\r\n}"
 						},
 						"url": {
-							"raw": "http://localhost:3000/features/48",
-							"protocol": "http",
+							"raw": "{{url}}/features/48",
 							"host": [
-								"localhost"
+								"{{url}}"
 							],
-							"port": "3000",
 							"path": [
 								"features",
 								"48"
@@ -481,12 +466,10 @@
 						"method": "DELETE",
 						"header": [],
 						"url": {
-							"raw": "http://localhost:3000/features/48",
-							"protocol": "http",
+							"raw": "{{url}}/features/48",
 							"host": [
-								"localhost"
+								"{{url}}"
 							],
-							"port": "3000",
 							"path": [
 								"features",
 								"48"
@@ -546,12 +529,10 @@
 							]
 						},
 						"url": {
-							"raw": "http://localhost:3000/jobs/uploaded",
-							"protocol": "http",
+							"raw": "{{url}}/jobs/uploaded",
 							"host": [
-								"localhost"
+								"{{url}}"
 							],
-							"port": "3000",
 							"path": [
 								"jobs",
 								"uploaded"
@@ -582,12 +563,10 @@
 							}
 						],
 						"url": {
-							"raw": "http://localhost:3000/jobs/cmeqmpfc70001ux844m7e5bia/process",
-							"protocol": "http",
+							"raw": "{{url}}/jobs/cmeqmpfc70001ux844m7e5bia/process",
 							"host": [
-								"localhost"
+								"{{url}}"
 							],
-							"port": "3000",
 							"path": [
 								"jobs",
 								"cmeqmpfc70001ux844m7e5bia",
@@ -678,6 +657,39 @@
 					"response": []
 				}
 			]
+		},
+		{
+			"name": "Cek Quota",
+			"item": [
+				{
+					"name": "Get Quota Today",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{bearer_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{url}}/jobs/quota-today",
+							"host": [
+								"{{url}}"
+							],
+							"path": [
+								"jobs",
+								"quota-today"
+							]
+						}
+					},
+					"response": []
+				}
+			]
 		}
 	],
 	"event": [
@@ -705,7 +717,15 @@
 	"variable": [
 		{
 			"key": "bearer_token",
-			"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjbGllbnRfaWQiOiJwcmltZWF1dGgtYWRtaW4iLCJleHAiOjE3NTYxMTE3NjMsImlhdCI6MTc1NjEwODE2MywicmVhbG1faWQiOiI4OTMwZWY3NC1iNmNmLTQ2NWEtOWE3NC04ZjljYzU5MWMzZTMiLCJzY29wZSI6Im9wZW5pZCBwcm9maWxlIGVtYWlsIiwic3ViIjoiNjBlOTkyOWUtNmUzMC00MzFjLTlmMWItNTI5YjYxODY3NzU5IiwidG9rZW5fdHlwZSI6ImFjY2VzcyJ9.c5beSBne7szgETYXvGul2IMnBsrcawVG4J_3vUwLnlg",
+			"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjbGllbnRfaWQiOiJwcmltZWF1dGgtYWRtaW4iLCJleHAiOjE3NTYxMTE3NjMsImlhdCI6MTc1NjEwODE2MywicmVhbG1faWQiOiI4OTMwZWY3NC1iNmNmLTQ2NWEtOWE3NC04ZjljYzU5MWMzZTMiLCJzY29wZSI6Im9wZW5pZCBwcm9maWxlIGVtYWlsIiwic3ViIjoiNjBlOTkyOWUtNmUzMC00MzFjLTlmMWItNTI5YjYxODY3NzU5IiwidG9rZW5fdHlwZSI6ImFjY2VzcyJ9.c5beSBne7szgETYXvGul2IMnBsrcawVG4J_3vUwLnlg"
+		},
+		{
+			"key": "url",
+			"value": "http://localhost:3000"
+		},
+		{
+			"key": "user_id",
+			"value": "113ccfa7-7bdc-4b35-88b6-e78db4f0293d",
 			"type": "string"
 		}
 	]
