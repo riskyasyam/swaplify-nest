@@ -213,6 +213,20 @@ export class JobsService {
     return this.serializeJobResponse(job);
   }
 
+  async findOneInternal(jobId: string) {
+    const job = await this.prisma.job.findFirst({ 
+      where: { id: jobId },
+      include: {
+        sourceAsset: true,
+        targetAsset: true,
+        audioAsset: true,
+        outputAsset: true
+      }
+    });
+    if (!job) throw new NotFoundException('Job not found');
+    return this.serializeJobResponse(job);
+  }
+
   /**
    * Handle worker callback (unified for success/error)
    */
@@ -364,6 +378,67 @@ export class JobsService {
 
     } catch (error) {
       console.error(`❌ Error manually completing job ${jobId}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Requeue failed job
+   */
+  async requeueJob(jobId: string, userId: string) {
+    try {
+      console.log(`🔄 Requeuing job ${jobId} for user ${userId}`);
+      
+      const job = await this.prisma.job.findFirst({
+        where: { id: jobId, userId },
+      });
+
+      if (!job) {
+        throw new NotFoundException('Job not found');
+      }
+
+      if (job.status !== 'FAILED') {
+        throw new BadRequestException('Only failed jobs can be requeued');
+      }
+
+      // Update job status to QUEUED
+      const updatedJob = await this.prisma.job.update({
+        where: { id: jobId },
+        data: {
+          status: JobStatus.QUEUED,
+          progressPct: 0,
+          errorCode: null,
+          errorMessage: null,
+          startedAt: null,
+          finishedAt: null,
+        },
+        include: {
+          sourceAsset: true,
+          targetAsset: true,
+          audioAsset: true,
+          outputAsset: true
+        }
+      });
+
+      // Publish job to NSQ
+      const nsqTopic = this.configService.get('NSQ_TOPIC', 'facefusion_jobs');
+      console.log(`🚦 Publishing requeued job ${jobId} to NSQ topic '${nsqTopic}'...`);
+      
+      await this.nsq.publishJob(nsqTopic, {
+        jobId: job.id,
+        userId: job.userId,
+        sourceAssetId: job.sourceAssetId,
+        targetAssetId: job.targetAssetId,
+        audioAssetId: job.audioAssetId,
+        processors: job.processors,
+        options: job.options,
+      });
+
+      console.log(`✅ Job ${jobId} requeued successfully`);
+      return { message: 'Job requeued successfully', job: this.serializeJobResponse(updatedJob) };
+      
+    } catch (error) {
+      console.error(`❌ Error requeuing job ${jobId}:`, error);
       throw error;
     }
   }

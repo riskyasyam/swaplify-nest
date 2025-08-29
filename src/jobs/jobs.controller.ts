@@ -82,6 +82,19 @@ export class JobsController {
     return this.jobs.handleWorkerCallback(jobId, payload);
   }
 
+  // GET /jobs/:id/internal - Get job details (for internal use)
+  @Public()
+  @Get(':id/internal')
+  async getJobByIdInternal(@Param('id') jobId: string, @Req() req: any) {
+    // Validasi internal secret
+    const internalSecret = req.headers['x-internal-secret'];
+    if (internalSecret !== process.env.INTERNAL_SECRET) {
+      throw new BadRequestException('Invalid internal secret');
+    }
+    
+    return this.jobs.findOneInternal(jobId);
+  }
+
   // POST /jobs/:id/internal-status - Internal status update (from queue service)
   @Public()
   @Post(':id/internal-status')
@@ -109,6 +122,15 @@ export class JobsController {
       throw new BadRequestException('User not authenticated');
     }
     return this.jobs.manualCompleteJob(jobId, req.user.id);
+  }
+
+  // POST /jobs/:id/requeue - Requeue failed job
+  @Post(':id/requeue')
+  async requeueJob(@Param('id') jobId: string, @Req() req: any) {
+    if (!req.user?.id) {
+      throw new BadRequestException('User not authenticated');
+    }
+    return this.jobs.requeueJob(jobId, req.user.id);
   }
 
   @Post('uploaded')

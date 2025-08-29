@@ -655,6 +655,35 @@
 						}
 					},
 					"response": []
+				},
+				{
+					"name": "Requeue / Re Send / Re Test",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{bearer_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{url}}/jobs/cmewcg3hf0001uxd4f5j7v7xk/requeue",
+							"host": [
+								"{{url}}"
+							],
+							"path": [
+								"jobs",
+								"cmewcg3hf0001uxd4f5j7v7xk",
+								"requeue"
+							]
+						}
+					},
+					"response": []
 				}
 			]
 		},
