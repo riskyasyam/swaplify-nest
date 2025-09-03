@@ -1,0 +1,158 @@
+services:
+  # Database
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: swaplify_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: asyam123
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - swaplify-network
+
+  # MinIO (S3 compatible storage)
+  minio:
+    image: minio/minio:latest
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio_data:/data
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    networks:
+      - swaplify-network
+
+  # NSQ
+  nsqlookupd:
+    image: nsqio/nsq:v1.2.1
+    command: /nsqlookupd
+    ports:
+      - "4160:4160"
+      - "4161:4161"
+    networks:
+      - swaplify-network
+
+  nsqd:
+    image: nsqio/nsq:v1.2.1
+    command: /nsqd --lookupd-tcp-address=nsqlookupd:4160
+    depends_on:
+      - nsqlookupd
+    ports:
+      - "4150:4150"
+      - "4151:4151"
+    networks:
+      - swaplify-network
+
+  nsqadmin:
+    image: nsqio/nsq:v1.2.1
+    command: /nsqadmin --lookupd-http-address=nsqlookupd:4161
+    depends_on:
+      - nsqlookupd
+    ports:
+      - "4171:4171"
+    networks:
+      - swaplify-network
+
+  # NestJS Backend
+  nestjs:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      - PORT=3000
+      - NODE_ENV=production
+      - DATABASE_URL=postgresql://postgres:asyam123@postgres:5432/swaplify_db?schema=public
+      - S3_ENDPOINT=http://minio:9000
+      - S3_ACCESS_KEY=minioadmin
+      - S3_SECRET_KEY=minioadmin
+      - S3_INPUT_BUCKET=facefusion-input
+      - S3_OUTPUT_BUCKET=facefusion-output
+      - NSQ_HOST=nsqd
+      - NSQ_TCP_PORT=4150
+      - NSQ_HTTP_PORT=4151
+      - NSQ_TOPIC=facefusion_jobs
+      - INTERNAL_SECRET=internalsecret
+      - WORKER_SHARED_SECRET=supersecret
+      - WORKER_BASE_URL=http://facefusion-worker:8081
+      - FACEFUSION_WORKER_URL=http://facefusion-worker:8081/worker/facefusion
+      # PrimeAuth settings
+      - PRIMEAUTH_AUTH_SERVICE_URL=https://api.primeauth.meetaza.com/auth
+      - PRIMEAUTH_REALM_SERVICE_URL=https://api.primeauth.meetaza.com/auth
+      - REALM_ID=8930ef74-b6cf-465a-9a74-8f9cc591c3e3
+      - PRIMEAUTH_JWKS_URI=https://api.primeauth.meetaza.com/auth/realms/8930ef74-b6cf-465a-9a74-8f9cc591c3e3/protocol/openid-connect/certs
+      - CLIENT_ID=primeauth-admin
+      - CLIENT_SECRET=DWITLTR1u5L_se4Fr37Ye2pg1LdHETiD
+      - DEBUG_AUTH=1
+      - REDIRECT_URI=http://localhost:3000/auth/callback
+      - IDENTITY_SERVICE_URL=https://api.primeauth.meetaza.com/identity
+      - API_AUDIENCE=swaplify-api
+      - ADMIN_EMAILS=admin@primeauth.dev,cto@primeauth.dev
+      - ADMIN_EMAIL_DOMAIN=primeauth.dev
+      - USE_REAL_FACEFUSION=true
+    depends_on:
+      - postgres
+      - minio
+      - nsqd
+    ports:
+      - "3000:3000"
+    networks:
+      - swaplify-network
+
+  # Queue Worker (commented out until Dockerfile is ready)
+  # queue-worker:
+  #   build:
+  #     context: ../swaplify-queue-worker
+  #     dockerfile: Dockerfile
+  #   environment:
+  #     - NSQ_TOPIC=facefusion_jobs
+  #     - NSQ_CHANNEL=facefusion_worker
+  #     - NSQ_HOST=nsqd
+  #     - NSQ_PORT=4150
+  #     - NEST_API_URL=http://nestjs:3000
+  #     - WORKER_URL=http://facefusion-worker:8081/worker/facefusion
+  #     - INTERNAL_SECRET=internalsecret
+  #     - WORKER_SHARED_SECRET=supersecret
+  #   depends_on:
+  #     - nestjs
+  #     - nsqd
+  #   networks:
+  #     - swaplify-network
+  #   restart: unless-stopped
+
+  # FastAPI Worker (commented out until Dockerfile is ready)
+  # facefusion-worker:
+  #   build:
+  #     context: ../facefusion
+  #     dockerfile: Dockerfile
+  #   environment:
+  #     - S3_ENDPOINT=http://minio:9000
+  #     - S3_REGION=us-east-1
+  #     - S3_ACCESS_KEY=minioadmin
+  #     - S3_SECRET_KEY=minioadmin
+  #     - S3_INPUT_BUCKET=facefusion-input
+  #     - S3_OUTPUT_BUCKET=facefusion-output
+  #     - NEST_BASE_URL=http://nestjs:3000
+  #     - WORKER_SHARED_SECRET=supersecret
+  #     - EXECUTION_DEVICE_ID=0
+  #   depends_on:
+  #     - minio
+  #     - nestjs
+  #   ports:
+  #     - "8081:8081"
+  #   networks:
+  #     - swaplify-network
+  #   restart: unless-stopped
+
+volumes:
+  postgres_data:
+  minio_data:
+
+networks:
+  swaplify-network:
+    driver: bridge

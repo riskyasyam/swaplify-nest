@@ -4,8 +4,15 @@ import { PrismaService } from 'src/prisma/prisma.service';
 import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { createHash } from 'crypto';
 import sharp from 'sharp';
-import * as mm from 'music-metadata';
 import { MediaType } from '@prisma/client';
+
+// Conditional import for music-metadata to avoid Docker issues
+let mm: any = null;
+try {
+  mm = require('music-metadata');
+} catch (error) {
+  console.warn('music-metadata not available, audio duration extraction disabled');
+}
 
 @Injectable()
 export class MediaAssetsService {
@@ -82,8 +89,10 @@ export class MediaAssetsService {
       }
     } else if (type === 'AUDIO') {
       try {
-        const meta = await mm.parseBuffer(file.buffer, file.mimetype);
-        durationSec = meta.format.duration ? Math.round(meta.format.duration) : null;
+        if (mm) {
+          const meta = await mm.parseBuffer(file.buffer, file.mimetype);
+          durationSec = meta.format.duration ? Math.round(meta.format.duration) : null;
+        }
       } catch {
         /* ignore */
       }
