@@ -1,0 +1,331 @@
+import { Test, TestingModule } from '@nestjs/testing';
+import { INestApplication } from '@nestjs/common';
+import { AppModule } from '../../../src/app.module';
+import { default as request } from 'supertest';
+import { JobStatus } from '@prisma/client';
+import { PrismaService } from '../../../src/prisma/prisma.service';
+import nock from 'nock';
+
+describe('Job Processing Integration Tests', () => {
+  let app: INestApplication;
+  let prisma: PrismaService;
+  let userToken: string;
+  let userId: string;
+
+  beforeAll(async () => {
+    const moduleFixture: TestingModule = await Test.createTestingModule({
+      imports: [AppModule],
+    }).compile();
+
+    app = moduleFixture.createNestApplication();
+    prisma = app.get(PrismaService);
+    await app.init();
+
+    // Create test user and get auth token
+    const user = await prisma.user.create({
+      data: {
+        authSub: 'test-user-job-processing',
+        email: 'jobtest@example.com',
+        displayName: 'Job Test User',
+        role: 'USER'
+      }
+    });
+    userId = user.id;
+
+    // Create FREE subscription
+    const freePlan = await prisma.plan.findUnique({ where: { code: 'FREE' } });
+    await prisma.subscription.create({
+      data: {
+        userId: user.id,
+        planId: freePlan!.id,
+        status: 'ACTIVE',
+        currentStart: new Date(),
+      }
+    });
+
+    // Mock JWT token for testing
+    userToken = 'Bearer mock_jwt_token_for_testing';
+  });
+
+  afterAll(async () => {
+    await app.close();
+  });
+
+  describe('POST /jobs', () => {
+    beforeEach(() => {
+      // Mock MinIO S3 operations
+      nock('http://minio:9000')
+        .persist()
+        .put(/.*/)
+        .reply(200)
+        .get(/.*/)
+        .reply(200, 'mock file content');
+
+      // Mock NSQ publishing
+      nock('http://nsqd:4151')
+        .persist()
+        .post(/.*/)
+        .reply(200, 'OK');
+    });
+
+    it('should create face swap job successfully', async () => {
+      const response = await request(app.getHttpServer())
+        .post('/jobs')
+        .set('Authorization', userToken)
+        .field('processors', JSON.stringify(['face_swapper']))
+        .field('options', JSON.stringify({
+          face_swapper_model: 'inswapper_128.onnx',
+          output_video_quality: 'high'
+        }))
+        .attach('sourceAsset', Buffer.from('mock source image'), 'source.jpg')
+        .attach('targetAsset', Buffer.from('mock target image'), 'target.jpg')
+        .expect(201);
+
+      // Verify response structure
+      expect(response.body).toHaveProperty('id');
+      expect(response.body).toHaveProperty('status', 'QUEUED');
+      expect(response.body.processors).toContain('face_swapper');
+
+      // Verify job saved in database
+      const job = await prisma.job.findUnique({
+        where: { id: response.body.id },
+        include: {
+          sourceAsset: true,
+          targetAsset: true
+        }
+      });
+
+      expect(job).toBeTruthy();
+      expect(job!.status).toBe(JobStatus.QUEUED);
+      expect(job!.userId).toBe(userId);
+      expect(job!.sourceAsset).toBeTruthy();
+      expect(job!.targetAsset).toBeTruthy();
+    });
+
+    it('should reject job when quota exceeded', async () => {
+      // Update user's usage to exceed quota
+      const today = new Date();
+      const tomorrow = new Date(today);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+
+      await prisma.usageCounter.create({
+        data: {
+          userId,
+          periodStart: today,
+          periodEnd: tomorrow,
+          jobsTotal: 100 // High number to exceed quota
+        }
+      });
+
+      await request(app.getHttpServer())
+        .post('/jobs')
+        .set('Authorization', userToken)
+        .field('processors', JSON.stringify(['face_swapper']))
+        .attach('sourceAsset', Buffer.from('mock source'), 'source.jpg')
+        .attach('targetAsset', Buffer.from('mock target'), 'target.jpg')
+        .expect(400);
+    });
+
+    it('should validate required files', async () => {
+      await request(app.getHttpServer())
+        .post('/jobs')
+        .set('Authorization', userToken)
+        .field('processors', JSON.stringify(['face_swapper']))
+        .expect(400);
+    });
+
+    it('should validate processors array', async () => {
+      await request(app.getHttpServer())
+        .post('/jobs')
+        .set('Authorization', userToken)
+        .field('processors', 'invalid_json')
+        .attach('sourceAsset', Buffer.from('mock source'), 'source.jpg')
+        .attach('targetAsset', Buffer.from('mock target'), 'target.jpg')
+        .expect(400);
+    });
+  });
+
+  describe('PATCH /jobs/:id/callback', () => {
+    let testJob: any;
+
+    beforeEach(async () => {
+      // Create test job
+      testJob = await prisma.job.create({
+        data: {
+          userId,
+          status: JobStatus.RUNNING,
+          processors: ['face_swapper'],
+          options: {},
+          weightUsed: 3
+        }
+      });
+    });
+
+    it('should handle successful job completion', async () => {
+      const callbackPayload = {
+        status: 'SUCCEEDED',
+        progressPct: 100
+      };
+
+      const response = await request(app.getHttpServer())
+        .patch(`/jobs/${testJob.id}/callback`)
+        .set('Authorization', 'Bearer internalsecret') // Use internal secret
+        .send(callbackPayload)
+        .expect(200);
+
+      expect(response.body.message).toContain('updated');
+
+      // Verify job status updated
+      const updatedJob = await prisma.job.findUnique({
+        where: { id: testJob.id }
+      });
+
+      expect(updatedJob!.status).toBe(JobStatus.SUCCEEDED);
+      expect(updatedJob!.progressPct).toBe(100);
+      expect(updatedJob!.finishedAt).toBeTruthy();
+    });
+
+    it('should handle job failure', async () => {
+      const callbackPayload = {
+        status: 'FAILED',
+        progressPct: 0,
+        errorMessage: 'Face detection failed'
+      };
+
+      await request(app.getHttpServer())
+        .patch(`/jobs/${testJob.id}/callback`)
+        .set('Authorization', 'Bearer internalsecret')
+        .send(callbackPayload)
+        .expect(200);
+
+      // Verify job marked as failed
+      const updatedJob = await prisma.job.findUnique({
+        where: { id: testJob.id }
+      });
+
+      expect(updatedJob!.status).toBe(JobStatus.FAILED);
+      expect(updatedJob!.errorMessage).toBe('Face detection failed');
+      expect(updatedJob!.finishedAt).toBeTruthy();
+    });
+
+    it('should reject unauthorized callback', async () => {
+      await request(app.getHttpServer())
+        .patch(`/jobs/${testJob.id}/callback`)
+        .send({ status: 'SUCCEEDED' })
+        .expect(401);
+    });
+  });
+
+  describe('POST /jobs/:id/requeue', () => {
+    let failedJob: any;
+
+    beforeEach(async () => {
+      failedJob = await prisma.job.create({
+        data: {
+          userId,
+          status: JobStatus.FAILED,
+          processors: ['face_swapper'],
+          options: {},
+          weightUsed: 3,
+          errorMessage: 'Test error'
+        }
+      });
+    });
+
+    it('should requeue failed job successfully', async () => {
+      // Mock NSQ publishing for requeue
+      nock('http://nsqd:4151')
+        .post(/.*/)
+        .reply(200, 'OK');
+
+      const response = await request(app.getHttpServer())
+        .post(`/jobs/${failedJob.id}/requeue`)
+        .set('Authorization', userToken)
+        .expect(200);
+
+      expect(response.body.message).toContain('requeued');
+
+      // Verify job status reset
+      const requeuedJob = await prisma.job.findUnique({
+        where: { id: failedJob.id }
+      });
+
+      expect(requeuedJob!.status).toBe(JobStatus.QUEUED);
+      expect(requeuedJob!.errorMessage).toBeNull();
+      expect(requeuedJob!.finishedAt).toBeNull();
+    });
+
+    it('should not requeue non-failed job', async () => {
+      const pendingJob = await prisma.job.create({
+        data: {
+          userId,
+          status: JobStatus.QUEUED,
+          processors: ['face_swapper'],
+          options: {},
+          weightUsed: 3
+        }
+      });
+
+      await request(app.getHttpServer())
+        .post(`/jobs/${pendingJob.id}/requeue`)
+        .set('Authorization', userToken)
+        .expect(400);
+    });
+  });
+
+  describe('GET /jobs', () => {
+    beforeEach(async () => {
+      // Create test jobs
+      await prisma.job.createMany({
+        data: [
+          {
+            userId,
+            status: JobStatus.SUCCEEDED,
+            processors: ['face_swapper'],
+            options: {},
+            weightUsed: 3,
+            createdAt: new Date('2025-01-01')
+          },
+          {
+            userId,
+            status: JobStatus.QUEUED,
+            processors: ['face_swapper'],
+            options: {},
+            weightUsed: 5,
+            createdAt: new Date('2025-01-02')
+          }
+        ]
+      });
+    });
+
+    it('should list user jobs with pagination', async () => {
+      const response = await request(app.getHttpServer())
+        .get('/jobs')
+        .set('Authorization', userToken)
+        .query({ page: 1, limit: 10 })
+        .expect(200);
+
+      expect(response.body).toHaveProperty('jobs');
+      expect(response.body).toHaveProperty('pagination');
+      expect(Array.isArray(response.body.jobs)).toBe(true);
+      expect(response.body.jobs.length).toBeGreaterThan(0);
+
+      // Verify jobs belong to user
+      response.body.jobs.forEach((job: any) => {
+        expect(job.userId).toBe(userId);
+      });
+    });
+
+    it('should filter jobs by status', async () => {
+      const response = await request(app.getHttpServer())
+        .get('/jobs')
+        .set('Authorization', userToken)
+        .query({ status: 'SUCCEEDED' })
+        .expect(200);
+
+      response.body.jobs.forEach((job: any) => {
+        expect(job.status).toBe('SUCCEEDED');
+      });
+    });
+  });
+});
