@@ -2,8 +2,19 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import { AppModule } from '../../../src/app.module';
 import { default as request } from 'supertest';
-import nock from 'nock';
 import { PrismaService } from '../../../src/prisma/prisma.service';
+
+// Mock axios at the module level
+jest.mock('axios', () => ({
+  post: jest.fn(),
+  get: jest.fn(),
+  create: jest.fn(() => ({
+    post: jest.fn(),
+    get: jest.fn(),
+  })),
+}));
+
+import axios from 'axios';
 
 describe('PrimeAuth Integration Tests - Fixed', () => {
   let app: INestApplication;
@@ -24,13 +35,14 @@ describe('PrimeAuth Integration Tests - Fixed', () => {
   });
 
   beforeEach(() => {
-    nock.cleanAll();
+    // Setup axios mocks
+    const mockAxios = axios as jest.Mocked<typeof axios>;
+    mockAxios.post.mockReset();
+    mockAxios.get.mockReset();
   });
 
   afterEach(() => {
-    if (!nock.isDone()) {
-      nock.cleanAll();
-    }
+    jest.clearAllMocks();
   });
 
   // Helper function to create valid JWT tokens
@@ -58,48 +70,57 @@ describe('PrimeAuth Integration Tests - Fixed', () => {
 
   // Helper function to setup basic mocks
   function setupBasicMocks(userInfoData: any = {}) {
-    const nockScope = nock('https://api.primeauth.meetaza.com');
+    const mockAxios = axios as jest.Mocked<typeof axios>;
+    
+    const mockJWT = createMockJWT();
     
     // Mock OIDC discovery
-    nockScope
-      .get('/auth/realms/8930ef74-b6cf-465a-9a74-8f9cc591c3e3/.well-known/openid_configuration')
-      .reply(200, {
-        issuer: 'https://api.primeauth.meetaza.com/auth/realms/8930ef74-b6cf-465a-9a74-8f9cc591c3e3',
-        authorization_endpoint: 'https://api.primeauth.meetaza.com/auth/realms/8930ef74-b6cf-465a-9a74-8f9cc591c3e3/protocol/openid-connect/auth',
-        token_endpoint: 'https://api.primeauth.meetaza.com/auth/realms/8930ef74-b6cf-465a-9a74-8f9cc591c3e3/protocol/openid-connect/token',
-        userinfo_endpoint: 'https://api.primeauth.meetaza.com/auth/realms/8930ef74-b6cf-465a-9a74-8f9cc591c3e3/protocol/openid-connect/userinfo'
-      });
+    mockAxios.get.mockImplementation((url: string) => {
+      if (url.includes('/.well-known/openid_configuration')) {
+        return Promise.resolve({
+          data: {
+            issuer: 'https://api.primeauth.meetaza.com/auth/realms/8930ef74-b6cf-465a-9a74-8f9cc591c3e3',
+            authorization_endpoint: 'https://api.primeauth.meetaza.com/auth/realms/8930ef74-b6cf-465a-9a74-8f9cc591c3e3/protocol/openid-connect/auth',
+            token_endpoint: 'https://api.primeauth.meetaza.com/auth/realms/8930ef74-b6cf-465a-9a74-8f9cc591c3e3/protocol/openid-connect/token',
+            userinfo_endpoint: 'https://api.primeauth.meetaza.com/auth/realms/8930ef74-b6cf-465a-9a74-8f9cc591c3e3/protocol/openid-connect/userinfo'
+          }
+        });
+      }
+      
+      if (url.includes('/protocol/openid-connect/userinfo')) {
+        const defaultUserInfo = {
+          sub: 'b5a9babd-6e00-4546-88ce-634016820b6f',
+          username: '',
+          email: '',
+          email_verified: false,
+          preferred_username: '',
+          realm_id: '8930ef74-b6cf-465a-9a74-8f9cc591c3e3',
+          updated_at: new Date().toISOString(),
+          ...userInfoData
+        };
+        return Promise.resolve({ data: defaultUserInfo });
+      }
+      
+      return Promise.reject(new Error(`Unexpected GET request to ${url}`));
+    });
     
     // Mock token exchange
-    const mockJWT = createMockJWT();
-    nockScope
-      .post('/auth/realms/8930ef74-b6cf-465a-9a74-8f9cc591c3e3/protocol/openid-connect/token')
-      .reply(200, {
-        access_token: mockJWT,
-        id_token: mockJWT,
-        refresh_token: 'mock_refresh_token_abcde',
-        token_type: 'Bearer',
-        expires_in: 3600,
-        scope: 'openid profile email'
-      });
-    
-    // Mock userinfo endpoint
-    const defaultUserInfo = {
-      sub: 'b5a9babd-6e00-4546-88ce-634016820b6f',
-      username: '',
-      email: '',
-      email_verified: false,
-      preferred_username: '',
-      realm_id: '8930ef74-b6cf-465a-9a74-8f9cc591c3e3',
-      updated_at: new Date().toISOString(),
-      ...userInfoData
-    };
-    
-    nockScope
-      .get('/auth/realms/8930ef74-b6cf-465a-9a74-8f9cc591c3e3/protocol/openid-connect/userinfo')
-      .reply(200, defaultUserInfo);
-
-    return nockScope;
+    mockAxios.post.mockImplementation((url: string) => {
+      if (url.includes('/protocol/openid-connect/token')) {
+        return Promise.resolve({
+          data: {
+            access_token: mockJWT,
+            id_token: mockJWT,
+            refresh_token: 'mock_refresh_token_abcde',
+            token_type: 'Bearer',
+            expires_in: 3600,
+            scope: 'openid profile email'
+          }
+        });
+      }
+      
+      return Promise.reject(new Error(`Unexpected POST request to ${url}`));
+    });
   }
 
   describe('GET /auth/prime/login', () => {
@@ -187,20 +208,25 @@ describe('PrimeAuth Integration Tests - Fixed', () => {
     });
 
     it('should handle failed OAuth callback', async () => {
-      const nockScope = nock('https://api.primeauth.meetaza.com');
+      const mockAxios = axios as jest.Mocked<typeof axios>;
       
-      nockScope
-        .get('/auth/realms/8930ef74-b6cf-465a-9a74-8f9cc591c3e3/.well-known/openid_configuration')
-        .reply(200, {
-          token_endpoint: 'https://api.primeauth.meetaza.com/auth/realms/8930ef74-b6cf-465a-9a74-8f9cc591c3e3/protocol/openid-connect/token'
-        });
+      mockAxios.get.mockImplementation((url: string) => {
+        if (url.includes('/.well-known/openid_configuration')) {
+          return Promise.resolve({
+            data: {
+              token_endpoint: 'https://api.primeauth.meetaza.com/auth/realms/8930ef74-b6cf-465a-9a74-8f9cc591c3e3/protocol/openid-connect/token'
+            }
+          });
+        }
+        return Promise.reject(new Error(`Unexpected GET request to ${url}`));
+      });
       
-      nockScope
-        .post('/auth/realms/8930ef74-b6cf-465a-9a74-8f9cc591c3e3/protocol/openid-connect/token')
-        .reply(400, {
-          error: 'invalid_grant',
-          error_description: 'Invalid authorization code'
-        });
+      mockAxios.post.mockImplementation((url: string) => {
+        if (url.includes('/protocol/openid-connect/token')) {
+          return Promise.reject(new Error('Token exchange failed'));
+        }
+        return Promise.reject(new Error(`Unexpected POST request to ${url}`));
+      });
 
       await request(app.getHttpServer())
         .get('/auth/callback')
@@ -217,18 +243,23 @@ describe('PrimeAuth Integration Tests - Fixed', () => {
 
   describe('POST /auth/refresh', () => {
     it('should refresh access token successfully', async () => {
-      const nockScope = nock('https://api.primeauth.meetaza.com');
+      const mockAxios = axios as jest.Mocked<typeof axios>;
       
-      nockScope
-        .post('/auth/realms/8930ef74-b6cf-465a-9a74-8f9cc591c3e3/protocol/openid-connect/token')
-        .reply(200, {
-          access_token: 'new_mock_access_token_12345',
-          id_token: 'new_mock_id_token_67890',
-          refresh_token: 'new_mock_refresh_token_abcde',
-          token_type: 'Bearer',
-          expires_in: 3600,
-          scope: 'openid profile email'
-        });
+      mockAxios.post.mockImplementation((url: string) => {
+        if (url.includes('/protocol/openid-connect/token')) {
+          return Promise.resolve({
+            data: {
+              access_token: 'new_mock_access_token_12345',
+              id_token: 'new_mock_id_token_67890',
+              refresh_token: 'new_mock_refresh_token_abcde',
+              token_type: 'Bearer',
+              expires_in: 3600,
+              scope: 'openid profile email'
+            }
+          });
+        }
+        return Promise.reject(new Error(`Unexpected POST request to ${url}`));
+      });
 
       const response = await request(app.getHttpServer())
         .post('/auth/refresh')
@@ -240,14 +271,14 @@ describe('PrimeAuth Integration Tests - Fixed', () => {
     });
 
     it('should handle invalid refresh token', async () => {
-      const nockScope = nock('https://api.primeauth.meetaza.com');
+      const mockAxios = axios as jest.Mocked<typeof axios>;
       
-      nockScope
-        .post('/auth/realms/8930ef74-b6cf-465a-9a74-8f9cc591c3e3/protocol/openid-connect/token')
-        .reply(400, {
-          error: 'invalid_grant',
-          error_description: 'Invalid refresh token'
-        });
+      mockAxios.post.mockImplementation((url: string) => {
+        if (url.includes('/protocol/openid-connect/token')) {
+          return Promise.reject(new Error('Invalid refresh token'));
+        }
+        return Promise.reject(new Error(`Unexpected POST request to ${url}`));
+      });
 
       await request(app.getHttpServer())
         .post('/auth/refresh')

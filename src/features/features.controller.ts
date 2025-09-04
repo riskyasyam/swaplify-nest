@@ -6,20 +6,21 @@ import { CreateFeatureDto } from './dto/create-feature.dto';
 import { UpdateFeatureDto } from './dto/update-feature.dto';
 import { FeatureStatus, FeatureType } from '@prisma/client';
 import { Public } from 'src/common/decorators/public.decorator';
+import { Roles } from 'src/common/decorators/roles.decorator';
 
 @Controller('features')
 export class FeaturesController {
   constructor(private readonly svc: FeaturesService) {}
 
   // CREATE
-  @Public()
+  @Roles('ADMIN')
   @Post()
   create(@Body() dto: CreateFeatureDto) {
     return this.svc.create(dto);
   }
 
   // LIST: ?q=&type=&status=&skip=&take=
-  @Public()
+  @Roles('ADMIN')
   @Get()
   findAll(
     @Query('q') q?: string,
@@ -38,21 +39,21 @@ export class FeaturesController {
   }
 
   // DETAIL
-  @Public()
+  @Roles('ADMIN')
   @Get(':id')
   findOne(@Param('id', ParseIntPipe) id: number) {
     return this.svc.findOne(id);
   }
 
   // UPDATE
-  @Public()
+  @Roles('ADMIN')
   @Patch(':id')
   update(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateFeatureDto) {
     return this.svc.update(id, dto);
   }
 
   // DELETE
-  @Public()
+  @Roles('ADMIN')
   @Delete(':id')
   remove(@Param('id', ParseIntPipe) id: number) {
     return this.svc.remove(id);

@@ -1,6 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 import { execSync } from 'child_process';
 import nock from 'nock';
+import * as path from 'path';
 
 export class TestDatabaseSetup {
   private static prisma: PrismaClient;
@@ -31,16 +32,18 @@ export class TestDatabaseSetup {
     this.prisma = new PrismaClient();
     
     try {
-      // Run migrations
-      execSync('npx prisma migrate deploy', { 
+      // Run migrations with correct schema path based on working directory
+      const schemaPath = process.cwd().endsWith('test') ? '../prisma/schema.prisma' : 'prisma/schema.prisma';
+      execSync(`npx prisma migrate deploy --schema=${schemaPath}`, { 
         stdio: 'inherit',
         env: { ...process.env, DATABASE_URL: process.env.DATABASE_URL }
       });
       
       // Seed test data
-      execSync('npx prisma db seed', { 
+      execSync(`npx prisma db seed --schema=${schemaPath}`, { 
         stdio: 'inherit',
-        env: { ...process.env, DATABASE_URL: process.env.DATABASE_URL }
+        env: { ...process.env, DATABASE_URL: process.env.DATABASE_URL },
+        cwd: path.resolve(__dirname, '..')
       });
       
       console.log('✅ Test database setup completed');
@@ -52,10 +55,18 @@ export class TestDatabaseSetup {
 
   static async cleanup() {
     if (this.prisma) {
-      // Clean test data
+      // Clean test data in correct order to avoid foreign key constraints
       await this.prisma.job.deleteMany();
       await this.prisma.subscription.deleteMany();
-      await this.prisma.user.deleteMany();
+      await this.prisma.user.deleteMany({
+        where: {
+          email: {
+            not: {
+              in: ['admin@primeauth.dev', 'asyam@gmail.com'] // Keep admin users
+            }
+          }
+        }
+      });
       
       await this.prisma.$disconnect();
     }
@@ -63,33 +74,57 @@ export class TestDatabaseSetup {
 
   static async resetDatabase() {
     if (this.prisma) {
-      // Reset database to clean state
+      // Reset database to clean state in correct order, but preserve admin users
       await this.prisma.job.deleteMany();
       await this.prisma.subscription.deleteMany(); 
-      await this.prisma.user.deleteMany();
+      // Only delete test users, not admin users
+      await this.prisma.user.deleteMany({
+        where: {
+          AND: [
+            {
+              email: {
+                not: {
+                  in: ['admin@primeauth.dev', 'asyam@gmail.com'] // Keep admin users
+                }
+              }
+            },
+            {
+              authSub: {
+                not: {
+                  in: ['admin-test-user'] // Keep test admin user
+                }
+              }
+            }
+          ]
+        }
+      });
     }
+  }
+
+  static getPrismaInstance() {
+    return this.prisma;
   }
 }
 
 // Global test setup
-beforeAll(async () => {
+global.beforeAll(async () => {
   await TestDatabaseSetup.setupTestDb();
 });
 
-afterAll(async () => {
+global.afterAll(async () => {
   await TestDatabaseSetup.cleanup();
   nock.cleanAll();
 });
 
-beforeEach(async () => {
+global.beforeEach(async () => {
   // Clean nock interceptors before each test
   nock.cleanAll();
   
-  // Reset database state
+  // Reset database state before each test
   await TestDatabaseSetup.resetDatabase();
 });
 
-afterEach(() => {
+global.afterEach(() => {
   // Ensure all nocks are used
   if (!nock.isDone()) {
     console.warn('Warning: Some nock interceptors were not used');

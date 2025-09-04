@@ -42,7 +42,9 @@ export class PlansController {
     return this.svc.update(id, dto);
   }
 
+  
   // DELETE
+  @Roles('ADMIN')
   @Delete(':id')
   remove(@Param('id', ParseIntPipe) id: number) {
     return this.svc.remove(id);
@@ -58,23 +60,5 @@ export class PlansController {
     // sisihkan field version, sisanya adalah payload JSON
     const { version, ...rest } = dto;
     return this.svc.upsertEntitlement(id, version, rest);
-  }
-
-  // LINK FEATURE
-  @Public()
-  @Post(':id/features')
-  linkFeature(@Param('id', ParseIntPipe) id: number, @Body() dto: LinkFeatureDto) {
-    const status = dto.status as FeatureStatusDto;
-    return this.svc.linkFeature(id, dto.featureId, status as unknown as FeatureStatus);
-  }
-
-  // UNLINK FEATURE
-  @Public()
-  @Delete(':id/features/:featureId')
-  unlinkFeature(
-    @Param('id', ParseIntPipe) id: number,
-    @Param('featureId', ParseIntPipe) featureId: number,
-  ) {
-    return this.svc.unlinkFeature(id, featureId);
   }
 }
