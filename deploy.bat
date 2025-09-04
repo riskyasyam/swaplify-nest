@@ -1,23 +1,33 @@
 @echo off
 REM Swaplify Deployment Script for Windows
 
-echo 🚀 Starting Swaplify deployment...
+echo ========================================
+echo    🚀 Swaplify Docker Deployment
+echo ========================================
 
 REM Stop existing containers
-echo 🛑 Stopping existing containers...
+echo [1/6] 🛑 Stopping existing containers...
 docker-compose down
 
 REM Build images
-echo 🔨 Building Docker images...
+echo [2/6] 🔨 Building Docker images...
 docker-compose build
 
-REM Start services
-echo ▶️ Starting services...
-docker-compose up -d
+REM Start infrastructure services first
+echo [3/6] 🗄️ Starting infrastructure services...
+docker-compose up -d postgres minio
 
-REM Wait for database to be ready
-echo ⏳ Waiting for database to be ready...
+REM Start NSQ services
+echo [4/6] 📨 Starting NSQ services...
+docker-compose up -d nsqlookupd nsqd nsqadmin
+
+REM Wait for infrastructure to be ready
+echo [5/6] ⏳ Waiting for services to be ready...
 timeout /t 15 /nobreak >nul
+
+REM Start application services
+echo [6/6] ▶️ Starting application services...
+docker-compose up -d nestjs
 
 REM Run database migrations
 echo 🗄️ Running database migrations...

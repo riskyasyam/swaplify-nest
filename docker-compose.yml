@@ -31,7 +31,7 @@ services:
   # NSQ
   nsqlookupd:
     image: nsqio/nsq:v1.2.1
-    command: /nsqlookupd
+    command: /nsqlookupd --http-address=0.0.0.0:4161
     ports:
       - "4160:4160"
       - "4161:4161"
@@ -40,7 +40,7 @@ services:
 
   nsqd:
     image: nsqio/nsq:v1.2.1
-    command: /nsqd --lookupd-tcp-address=nsqlookupd:4160
+    command: /nsqd --lookupd-tcp-address=nsqlookupd:4160 --http-address=0.0.0.0:4151
     depends_on:
       - nsqlookupd
     ports:
@@ -51,7 +51,7 @@ services:
 
   nsqadmin:
     image: nsqio/nsq:v1.2.1
-    command: /nsqadmin --lookupd-http-address=nsqlookupd:4161
+    command: /nsqadmin --lookupd-http-address=nsqlookupd:4161 --http-address=0.0.0.0:4171
     depends_on:
       - nsqlookupd
     ports:
