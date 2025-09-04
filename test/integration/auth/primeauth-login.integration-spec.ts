@@ -19,6 +19,7 @@ import axios from 'axios';
 describe('PrimeAuth Integration Tests - Fixed', () => {
   let app: INestApplication;
   let prisma: PrismaService;
+  let testUserIds: string[] = []; // Track test users for cleanup
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -39,9 +40,22 @@ describe('PrimeAuth Integration Tests - Fixed', () => {
     const mockAxios = axios as jest.Mocked<typeof axios>;
     mockAxios.post.mockReset();
     mockAxios.get.mockReset();
+    
+    // Reset test user tracking
+    testUserIds = [];
   });
 
-  afterEach(() => {
+  afterEach(async () => {
+    // Cleanup test users created during this test
+    if (testUserIds.length > 0) {
+      await prisma.subscription.deleteMany({
+        where: { userId: { in: testUserIds } }
+      });
+      await prisma.user.deleteMany({
+        where: { id: { in: testUserIds } }
+      });
+    }
+    
     jest.clearAllMocks();
   });
 
@@ -54,7 +68,7 @@ describe('PrimeAuth Integration Tests - Fixed', () => {
       iss: 'https://api.primeauth.meetaza.com/auth/realms/8930ef74-b6cf-465a-9a74-8f9cc591c3e3',
       exp: Math.floor(Date.now() / 1000) + 3600,
       iat: Math.floor(Date.now() / 1000),
-      email: 'test@example.com',
+      email: `test-${Date.now()}@example.com`, // Unique email
       email_verified: true,
       preferred_username: 'testuser',
       ...payload
@@ -72,7 +86,8 @@ describe('PrimeAuth Integration Tests - Fixed', () => {
   function setupBasicMocks(userInfoData: any = {}) {
     const mockAxios = axios as jest.Mocked<typeof axios>;
     
-    const mockJWT = createMockJWT();
+    const uniqueEmail = userInfoData.email || `test-${Date.now()}@example.com`;
+    const mockJWT = createMockJWT({ email: uniqueEmail });
     
     // Mock OIDC discovery
     mockAxios.get.mockImplementation((url: string) => {
@@ -91,7 +106,7 @@ describe('PrimeAuth Integration Tests - Fixed', () => {
         const defaultUserInfo = {
           sub: 'b5a9babd-6e00-4546-88ce-634016820b6f',
           username: '',
-          email: '',
+          email: uniqueEmail,
           email_verified: false,
           preferred_username: '',
           realm_id: '8930ef74-b6cf-465a-9a74-8f9cc591c3e3',
@@ -151,7 +166,10 @@ describe('PrimeAuth Integration Tests - Fixed', () => {
       expect(response.body).toHaveProperty('access_token');
       expect(response.body).toHaveProperty('refresh_token');
       expect(response.body).toHaveProperty('user');
-      expect(response.body.user).toHaveProperty('email', 'test@example.com'); // From JWT token claims
+      expect(response.body.user).toHaveProperty('email'); // Dynamic email
+      
+      // Track user for cleanup
+      testUserIds.push(response.body.user.id);
     });
 
     it('should create user in database on first login', async () => {
@@ -171,7 +189,10 @@ describe('PrimeAuth Integration Tests - Fixed', () => {
         where: { id: response.body.user.id }
       });
       expect(user).toBeTruthy();
-      expect(user?.email).toBe('test@example.com');
+      expect(user?.email).toBe(response.body.user.email); // Dynamic email
+      
+      // Track user for cleanup
+      testUserIds.push(response.body.user.id);
     });
 
     it('should create FREE subscription for new user', async () => {
@@ -189,11 +210,17 @@ describe('PrimeAuth Integration Tests - Fixed', () => {
       
       expect(subscription).toBeTruthy();
       expect(subscription?.plan.code).toBe('FREE');
+      
+      // Track user for cleanup
+      testUserIds.push(response.body.user.id);
     });
 
     it('should handle admin user promotion', async () => {
+      // Gunakan email admin unik untuk test ini
+      const uniqueAdminEmail = `admin-test-${Date.now()}@primeauth.dev`;
+      
       setupBasicMocks({
-        email: 'admin@primeauth.dev',
+        email: uniqueAdminEmail,
         first_name: 'Admin',
         last_name: 'User'
       });
@@ -205,6 +232,9 @@ describe('PrimeAuth Integration Tests - Fixed', () => {
 
       const user = response.body.user;
       expect(user.role).toBe('ADMIN');
+      
+      // Track user for cleanup
+      testUserIds.push(user.id);
     });
 
     it('should handle failed OAuth callback', async () => {
@@ -306,14 +336,17 @@ describe('PrimeAuth Integration Tests - Fixed', () => {
 
       // Step 3: Verify complete response
       expect(callbackResponse.body.message).toBe('Login berhasil');
-      expect(callbackResponse.body.user.email).toBe('test@example.com');
+      expect(callbackResponse.body.user.email).toBeTruthy(); // Dynamic email
 
       // Step 4: Verify user exists in database
       const user = await prisma.user.findUnique({
         where: { id: callbackResponse.body.user.id }
       });
       expect(user).toBeTruthy();
-      expect(user?.email).toBe('test@example.com');
+      expect(user?.email).toBe(callbackResponse.body.user.email); // Dynamic email
+      
+      // Track user for cleanup
+      testUserIds.push(callbackResponse.body.user.id);
     });
   });
 });

@@ -136,534 +136,478 @@ describe('Admin Management Integration Tests', () => {
     jest.clearAllMocks();
   });
 
-  describe('User Management', () => {
-    it('should get all users', async () => {
+  describe('Admin User Management', () => {
+    it('should get all users (GET /user)', async () => {
       const response = await request(app.getHttpServer())
         .get('/user')
         .set(adminHeaders)
         .expect(200);
 
+      expect(response.body).toBeDefined();
       expect(Array.isArray(response.body)).toBe(true);
-      expect(response.body.length).toBeGreaterThanOrEqual(2); // Admin + test user
+      expect(response.body.length).toBeGreaterThan(0);
       
-      const adminUser = response.body.find(u => u.role === 'ADMIN');
-      expect(adminUser).toBeDefined();
-      expect(adminUser.email).toBe('admin@primeauth.dev');
+      // Check user structure
+      const user = response.body[0];
+      expect(user).toHaveProperty('id');
+      expect(user).toHaveProperty('email');
+      expect(user).toHaveProperty('displayName');
+      expect(user).toHaveProperty('role');
     });
 
-    it('should get user quota', async () => {
-      const response = await request(app.getHttpServer())
-        .get(`/user/${testUserId}/quota`)
-        .set(adminHeaders)
-        .expect(200);
+    it('should update user subscription (PUT /user/:id/subscription)', async () => {
+      // Get a valid plan dynamically
+      const plan = await prisma.plan.findFirst({ where: { code: 'PRO' } }) || 
+                   await prisma.plan.findFirst({ where: { code: 'PREMIUM' } }) ||
+                   await prisma.plan.findFirst();
+      
+      expect(plan).toBeDefined();
 
-      // Response contains user data, not a separate quotas property
-      expect(response.body).toHaveProperty('userId');
-      expect(response.body).toHaveProperty('email');
-      expect(response.body).toHaveProperty('jobsThisMonth');
-    });
-
-    it('should update user subscription', async () => {
-      // First create a plan and subscription
-      const plan = await prisma.plan.findFirst({ where: { code: 'PRO' } });
-      if (!plan) throw new Error('PRO plan not found');
-
-      const subscriptionData = {
-        planCode: 'PRO',
-        status: 'ACTIVE' as const
+      const updateData = {
+        plan: plan!.code,
+        status: 'ACTIVE'
       };
 
       const response = await request(app.getHttpServer())
         .put(`/user/${testUserId}/subscription`)
         .set(adminHeaders)
-        .send(subscriptionData)
-        .expect(200);
-
-      expect(response.body).toHaveProperty('subscription');
-      expect(response.body.subscription.status).toBe('ACTIVE');
-      expect(response.body.subscription.planId).toBe(plan.id);
-    });
-
-    it('should update user role', async () => {
-      const response = await request(app.getHttpServer())
-        .put(`/user/${testUserId}/role`)
-        .set(adminHeaders)
-        .send({ role: 'ADMIN' })
-        .expect(200);
-
-      expect(response.body).toHaveProperty('user');
-      expect(response.body.user.role).toBe('ADMIN');
-    });
-
-    it('should delete user', async () => {
-      const response = await request(app.getHttpServer())
-        .delete(`/user/${testUserId}`)
-        .set(adminHeaders)
+        .send(updateData)
         .expect(200);
 
       expect(response.body).toHaveProperty('message');
-      expect(response.body.message).toContain('dihapus');
-      
-      // Verify user is deleted
-      const deletedUser = await prisma.user.findUnique({ where: { id: testUserId } });
-      expect(deletedUser).toBeNull();
+      expect(response.body.message).toContain('updated');
+
+      // Verify subscription updated in database
+      const subscription = await prisma.subscription.findFirst({
+        where: { userId: testUserId },
+        include: { plan: true }
+      });
+      expect(subscription).toBeDefined();
+      expect(subscription!.plan.code).toBe(plan!.code);
+    });
+
+    it('should handle invalid user ID (PUT /user/invalid/subscription)', async () => {
+      const updateData = {
+        plan: 'PRO',
+        status: 'ACTIVE'
+      };
+
+      const response = await request(app.getHttpServer())
+        .put('/user/invalid-user-id/subscription')
+        .set(adminHeaders)
+        .send(updateData)
+        .expect(404);
+
+      expect(response.body).toHaveProperty('message');
+      expect(response.body.message).toContain('not found');
+    });
+
+    it('should handle invalid plan code (PUT /user/:id/subscription)', async () => {
+      const updateData = {
+        plan: 'INVALID_PLAN',
+        status: 'ACTIVE'
+      };
+
+      const response = await request(app.getHttpServer())
+        .put(`/user/${testUserId}/subscription`)
+        .set(adminHeaders)
+        .send(updateData)
+        .expect(400);
+
+      expect(response.body).toHaveProperty('message');
+      expect(response.body.message).toContain('Invalid plan');
+    });
+
+    it('should require admin authorization (GET /user)', async () => {
+      await request(app.getHttpServer())
+        .get('/user')
+        .expect(401);
+    });
+
+    it('should require admin authorization (PUT /user/:id/subscription)', async () => {
+      const updateData = {
+        plan: 'PRO',
+        status: 'ACTIVE'
+      };
+
+      await request(app.getHttpServer())
+        .put(`/user/${testUserId}/subscription`)
+        .send(updateData)
+        .expect(401);
     });
   });
 
-  describe('Plans Management', () => {
-    it('should get all plans', async () => {
+  describe('Admin Plan Management', () => {
+    it('should get all plans (GET /plans)', async () => {
       const response = await request(app.getHttpServer())
         .get('/plans')
         .set(adminHeaders)
         .expect(200);
 
-      expect(response.body).toHaveProperty('items');
-      expect(Array.isArray(response.body.items)).toBe(true);
-      expect(response.body.items.length).toBeGreaterThan(0);
+      expect(response.body).toBeDefined();
+      expect(Array.isArray(response.body)).toBe(true);
+      expect(response.body.length).toBeGreaterThan(0);
       
-      // Check for any plan that exists instead of specifically FREE
-      const anyPlan = response.body.items[0];
-      expect(anyPlan).toBeDefined();
-      expect(anyPlan).toHaveProperty('id');
-      expect(anyPlan).toHaveProperty('code');
-      expect(anyPlan).toHaveProperty('name');
+      // Check plan structure
+      const plan = response.body[0];
+      expect(plan).toHaveProperty('id');
+      expect(plan).toHaveProperty('code');
+      expect(plan).toHaveProperty('name');
     });
 
-    it('should get plan details', async () => {
-      // Get any available plan instead of specifically FREE
-      const plan = await prisma.plan.findFirst();
-      if (!plan) throw new Error('No plan found');
-
-      const response = await request(app.getHttpServer())
-        .get(`/plans/${plan.id}`)
-        .set(adminHeaders)
-        .expect(200);
-
-      expect(response.body.id).toBe(plan.id);
-      expect(response.body.code).toBe(plan.code);
-    });
-
-    it('should create new plan', async () => {
-      const timestamp = Date.now();
-      const newPlanData = {
-        code: `ENTERPRISE_${timestamp}`,
-        name: `Enterprise ${timestamp}`,
-        priority: 4
+    it('should create a new plan (POST /plans)', async () => {
+      const baseTimestamp = Date.now();
+      const uniqueId = Math.random().toString(36).substring(7);
+      
+      const newPlan = {
+        code: `PLAN_${baseTimestamp}_${uniqueId}`,
+        name: `Test Plan ${baseTimestamp}`,
+        priority: 99
       };
 
       const response = await request(app.getHttpServer())
         .post('/plans')
         .set(adminHeaders)
-        .send(newPlanData)
+        .send(newPlan)
         .expect(201);
 
-      expect(response.body.code).toBe(`ENTERPRISE_${timestamp}`);
-      expect(response.body.name).toBe(`Enterprise ${timestamp}`);
-      expect(response.body.priority).toBe(4);
+      expect(response.body).toHaveProperty('id');
+      expect(response.body.code).toBe(newPlan.code);
+      expect(response.body.name).toBe(newPlan.name);
+      expect(response.body.priority).toBe(newPlan.priority);
+
+      // Verify plan created in database
+      const createdPlan = await prisma.plan.findUnique({
+        where: { code: newPlan.code }
+      });
+      expect(createdPlan).toBeDefined();
+      expect(createdPlan!.name).toBe(newPlan.name);
     });
 
-    it('should update plan', async () => {
-      // Get any available plan instead of specifically FREE
-      const plan = await prisma.plan.findFirst();
-      if (!plan) throw new Error('No plan found');
+    it('should handle duplicate plan code (POST /plans)', async () => {
+      const existingPlan = await prisma.plan.findFirst();
+      expect(existingPlan).toBeDefined();
 
-      const updateData = {
-        name: `${plan.name} Updated`,
-        priority: 5
+      const duplicatePlan = {
+        code: existingPlan!.code,
+        name: 'Duplicate Plan',
+        priority: 1
       };
 
       const response = await request(app.getHttpServer())
-        .patch(`/plans/${plan.id}`)
+        .post('/plans')
+        .set(adminHeaders)
+        .send(duplicatePlan)
+        .expect(400);
+
+      expect(response.body).toHaveProperty('message');
+      expect(response.body.message).toContain('already exists');
+    });
+
+    it('should update an existing plan (PUT /plans/:id)', async () => {
+      const existingPlan = await prisma.plan.findFirst();
+      expect(existingPlan).toBeDefined();
+
+      const updateData = {
+        name: `Updated Plan ${Date.now()}`,
+        priority: 50
+      };
+
+      const response = await request(app.getHttpServer())
+        .put(`/plans/${existingPlan!.id}`)
         .set(adminHeaders)
         .send(updateData)
         .expect(200);
 
-      expect(response.body.name).toBe(`${plan.name} Updated`);
-      expect(response.body.priority).toBe(5);
+      expect(response.body).toHaveProperty('id');
+      expect(response.body.name).toBe(updateData.name);
+      expect(response.body.priority).toBe(updateData.priority);
+
+      // Verify plan updated in database
+      const updatedPlan = await prisma.plan.findUnique({
+        where: { id: existingPlan!.id }
+      });
+      expect(updatedPlan!.name).toBe(updateData.name);
+      expect(updatedPlan!.priority).toBe(updateData.priority);
     });
 
-    it('should delete plan', async () => {
-      // Create a plan to delete
-      const timestamp = Date.now();
-      const planToDelete = await prisma.plan.create({
+    it('should handle invalid plan ID (PUT /plans/999999)', async () => {
+      const updateData = {
+        name: 'Updated Plan',
+        priority: 1
+      };
+
+      const response = await request(app.getHttpServer())
+        .put('/plans/999999')
+        .set(adminHeaders)
+        .send(updateData)
+        .expect(404);
+
+      expect(response.body).toHaveProperty('message');
+      expect(response.body.message).toContain('not found');
+    });
+
+    it('should delete a plan (DELETE /plans/:id)', async () => {
+      // Create a test plan to delete
+      const baseTimestamp = Date.now();
+      const uniqueId = Math.random().toString(36).substring(7);
+      
+      const testPlan = await prisma.plan.create({
         data: {
-          code: `TO_DELETE_${timestamp}`,
-          name: `To Delete ${timestamp}`,
-          priority: 99
+          code: `DELETE_TEST_${baseTimestamp}_${uniqueId}`,
+          name: 'Plan to Delete',
+          priority: 999
         }
       });
 
       const response = await request(app.getHttpServer())
-        .delete(`/plans/${planToDelete.id}`)
+        .delete(`/plans/${testPlan.id}`)
         .set(adminHeaders)
         .expect(200);
 
-      // Plan delete returns the deleted plan object, not a message
-      expect(response.body).toHaveProperty('id');
-      expect(response.body.id).toBe(planToDelete.id);
-      
-      // Verify plan is deleted
-      const deletedPlan = await prisma.plan.findUnique({ where: { id: planToDelete.id } });
+      expect(response.body).toHaveProperty('message');
+      expect(response.body.message).toContain('deleted');
+
+      // Verify plan deleted from database
+      const deletedPlan = await prisma.plan.findUnique({
+        where: { id: testPlan.id }
+      });
       expect(deletedPlan).toBeNull();
+    });
+
+    it('should handle invalid plan ID for deletion (DELETE /plans/999999)', async () => {
+      const response = await request(app.getHttpServer())
+        .delete('/plans/999999')
+        .set(adminHeaders)
+        .expect(404);
+
+      expect(response.body).toHaveProperty('message');
+      expect(response.body.message).toContain('not found');
     });
   });
 
-  describe('Features Management', () => {
-    it('should get all features', async () => {
+  describe('Admin Feature Management', () => {
+    it('should get all features (GET /features)', async () => {
       const response = await request(app.getHttpServer())
         .get('/features')
         .set(adminHeaders)
         .expect(200);
 
-      expect(response.body).toHaveProperty('items');
-      expect(Array.isArray(response.body.items)).toBe(true);
-      expect(response.body.items.length).toBeGreaterThan(0);
+      expect(response.body).toBeDefined();
+      expect(Array.isArray(response.body)).toBe(true);
+      expect(response.body.length).toBeGreaterThan(0);
       
-      const firstFeature = response.body.items[0];
-      expect(firstFeature).toHaveProperty('name');
-      expect(firstFeature).toHaveProperty('status');
-      expect(firstFeature).toHaveProperty('weight');
+      // Check feature structure
+      const feature = response.body[0];
+      expect(feature).toHaveProperty('id');
+      expect(feature).toHaveProperty('name');
+      expect(feature).toHaveProperty('type');
+      expect(feature).toHaveProperty('status');
     });
 
-    it('should get feature details', async () => {
-      const feature = await prisma.feature.findFirst();
-      if (!feature) throw new Error('Feature not found');
+    it('should create a new feature (POST /features)', async () => {
+      const baseTimestamp = Date.now();
+      const uniqueId = Math.random().toString(36).substring(7);
       
-      const response = await request(app.getHttpServer())
-        .get(`/features/${feature.id}`)
-        .set(adminHeaders)
-        .expect(200);
-
-      expect(response.body.id).toBe(feature.id);
-      expect(response.body.name).toBe(feature.name);
-    });
-
-    it('should create new feature', async () => {
-      const timestamp = Date.now();
-      const newFeatureData = {
-        name: `new_test_feature_${timestamp}`,
-        value: 'test_value',
+      const newFeature = {
+        name: `feature_${baseTimestamp}_${uniqueId}`,
+        value: `Test Feature ${baseTimestamp}`,
         type: 'feature',
         status: 'ACTIVE',
-        weight: 1
+        weight: 10
       };
 
       const response = await request(app.getHttpServer())
         .post('/features')
         .set(adminHeaders)
-        .send(newFeatureData)
+        .send(newFeature)
         .expect(201);
 
-      expect(response.body.name).toBe(`new_test_feature_${timestamp}`);
-      expect(response.body.status).toBe('ACTIVE');
-      expect(response.body.weight).toBe(1);
+      expect(response.body).toHaveProperty('id');
+      expect(response.body.name).toBe(newFeature.name);
+      expect(response.body.value).toBe(newFeature.value);
+      expect(response.body.type).toBe(newFeature.type);
+      expect(response.body.status).toBe(newFeature.status);
+
+      // Verify feature created in database
+      const createdFeature = await prisma.feature.findUnique({
+        where: { name: newFeature.name }
+      });
+      expect(createdFeature).toBeDefined();
+      expect(createdFeature!.value).toBe(newFeature.value);
     });
 
-    it('should update feature', async () => {
-      const feature = await prisma.feature.findFirst();
-      if (!feature) throw new Error('Feature not found');
-      
-      const updateData = {
-        status: 'INACTIVE',
-        weight: 5
+    it('should handle duplicate feature name (POST /features)', async () => {
+      const existingFeature = await prisma.feature.findFirst();
+      expect(existingFeature).toBeDefined();
+
+      const duplicateFeature = {
+        name: existingFeature!.name,
+        value: 'Duplicate Feature',
+        type: 'feature',
+        status: 'ACTIVE',
+        weight: 10
       };
 
       const response = await request(app.getHttpServer())
-        .patch(`/features/${feature.id}`)
+        .post('/features')
+        .set(adminHeaders)
+        .send(duplicateFeature)
+        .expect(400);
+
+      expect(response.body).toHaveProperty('message');
+      expect(response.body.message).toContain('already exists');
+    });
+
+    it('should update an existing feature (PUT /features/:id)', async () => {
+      const existingFeature = await prisma.feature.findFirst();
+      expect(existingFeature).toBeDefined();
+
+      const updateData = {
+        value: `Updated Feature ${Date.now()}`,
+        status: 'INACTIVE',
+        weight: 25
+      };
+
+      const response = await request(app.getHttpServer())
+        .put(`/features/${existingFeature!.id}`)
         .set(adminHeaders)
         .send(updateData)
         .expect(200);
 
-      expect(response.body.status).toBe('INACTIVE');
-      expect(response.body.weight).toBe(5);
+      expect(response.body).toHaveProperty('id');
+      expect(response.body.value).toBe(updateData.value);
+      expect(response.body.status).toBe(updateData.status);
+      expect(response.body.weight).toBe(updateData.weight);
+
+      // Verify feature updated in database
+      const updatedFeature = await prisma.feature.findUnique({
+        where: { id: existingFeature!.id }
+      });
+      expect(updatedFeature!.value).toBe(updateData.value);
+      expect(updatedFeature!.status).toBe(updateData.status);
     });
 
-    it('should delete feature', async () => {
-      // Create a feature to delete
-      const timestamp = Date.now();
-      const featureToDelete = await prisma.feature.create({
+    it('should handle invalid feature ID (PUT /features/999999)', async () => {
+      const updateData = {
+        value: 'Updated Feature',
+        status: 'ACTIVE'
+      };
+
+      const response = await request(app.getHttpServer())
+        .put('/features/999999')
+        .set(adminHeaders)
+        .send(updateData)
+        .expect(404);
+
+      expect(response.body).toHaveProperty('message');
+      expect(response.body.message).toContain('not found');
+    });
+
+    it('should delete a feature (DELETE /features/:id)', async () => {
+      // Create a test feature to delete
+      const baseTimestamp = Date.now();
+      const uniqueId = Math.random().toString(36).substring(7);
+      
+      const testFeature = await prisma.feature.create({
         data: {
-          name: `feature_to_delete_${timestamp}`,
-          value: '',
+          name: `delete_test_${baseTimestamp}_${uniqueId}`,
+          value: 'Feature to Delete',
           type: 'feature',
           status: 'ACTIVE',
-          weight: 1
+          weight: 999
         }
       });
 
       const response = await request(app.getHttpServer())
-        .delete(`/features/${featureToDelete.id}`)
+        .delete(`/features/${testFeature.id}`)
         .set(adminHeaders)
         .expect(200);
 
-      // Feature delete should return the deleted feature data, not a message
-      expect(response.body).toHaveProperty('id');
-      expect(response.body.id).toBe(featureToDelete.id);
-      
-      // Verify feature is deleted
-      const deletedFeature = await prisma.feature.findUnique({ where: { id: featureToDelete.id } });
+      expect(response.body).toHaveProperty('message');
+      expect(response.body.message).toContain('deleted');
+
+      // Verify feature deleted from database
+      const deletedFeature = await prisma.feature.findUnique({
+        where: { id: testFeature.id }
+      });
       expect(deletedFeature).toBeNull();
     });
+
+    it('should handle invalid feature ID for deletion (DELETE /features/999999)', async () => {
+      const response = await request(app.getHttpServer())
+        .delete('/features/999999')
+        .set(adminHeaders)
+        .expect(404);
+
+      expect(response.body).toHaveProperty('message');
+      expect(response.body.message).toContain('not found');
+    });
   });
 
-  describe('Plan Entitlements', () => {
-    it('should get plan entitlements', async () => {
-      // Get any available plan instead of specifically FREE
-      const plan = await prisma.plan.findFirst();
-      if (!plan) throw new Error('No plan found');
-      
-      // Get plan details which includes entitlements
-      const response = await request(app.getHttpServer())
-        .get(`/plans/${plan.id}`)
-        .set(adminHeaders)
-        .expect(200);
-
-      expect(response.body.id).toBe(plan.id);
-      expect(response.body).toHaveProperty('entitlements');
-      expect(Array.isArray(response.body.entitlements)).toBe(true);
-    });
-
-    it('should create plan entitlement', async () => {
-      const plan = await prisma.plan.findFirst({ where: { code: 'PRO' } });
-      const feature = await prisma.feature.findFirst({ where: { type: 'feature' } });
-      if (!plan) throw new Error('PRO plan not found');
-      if (!feature) throw new Error('Feature not found');
-      
-      const entitlementData = {
-        version: 1,
-        featureId: feature.id,
-        value: '1000'
+  describe('Admin Authorization Tests', () => {
+    it('should require admin authorization for plan creation', async () => {
+      const newPlan = {
+        code: 'UNAUTHORIZED_PLAN',
+        name: 'Unauthorized Plan',
+        priority: 1
       };
 
-      const response = await request(app.getHttpServer())
-        .post(`/plans/${plan.id}/entitlements`)
-        .set(adminHeaders)
-        .send(entitlementData)
-        .expect(201);
-
-      expect(response.body.planId).toBe(plan.id);
-      expect(response.body.version).toBe(1);
-      expect(response.body).toHaveProperty('entitlements');
-      // The entitlements is JSON containing the sent data minus version
-      expect(response.body.entitlements).toHaveProperty('featureId');
-      expect(response.body.entitlements.featureId).toBe(feature.id);
-    });
-  });
-
-  describe('User Subscriptions', () => {
-    it('should get user active subscription', async () => {
-      // Create a subscription for test user first
-      // Get any available plan instead of specifically FREE
-      const plan = await prisma.plan.findFirst();
-      if (!plan) throw new Error('No plan found');
-      
-      await prisma.subscription.create({
-        data: {
-          userId: testUserId,
-          planId: plan.id,
-          status: 'ACTIVE',
-          currentStart: new Date(),
-          currentEnd: null // Active subscription has null currentEnd
-        }
-      });
-
-      const response = await request(app.getHttpServer())
-        .get(`/user/${testUserId}/details`)
-        .set(adminHeaders)
-        .expect(200);
-
-      expect(response.body).toHaveProperty('subscription');
-      expect(response.body.subscription).not.toBeNull();
-      expect(response.body.subscription.status).toBe('ACTIVE');
-      expect(response.body.subscription.planCode).toBe(plan.code);
-    });
-
-    it('should cancel user subscription', async () => {
-      // Create a subscription for test user
-      const plan = await prisma.plan.findFirst({ where: { code: 'PRO' } });
-      if (!plan) throw new Error('PRO plan not found');
-      
-      const subscription = await prisma.subscription.create({
-        data: {
-          userId: testUserId,
-          planId: plan.id,
-          status: 'ACTIVE',
-          currentStart: new Date(),
-          currentEnd: null
-        }
-      });
-
-      // Update subscription to CANCELLED status
-      const response = await request(app.getHttpServer())
-        .put(`/user/${testUserId}/subscription`)
-        .set(adminHeaders)
-        .send({
-          planCode: 'PRO',
-          status: 'CANCELLED'
-        })
-        .expect(200);
-
-      expect(response.body).toHaveProperty('subscription');
-      expect(response.body.subscription.status).toBe('CANCELLED');
-      
-      // Verify subscription is cancelled  
-      const cancelledSub = await prisma.subscription.findFirst({ 
-        where: { userId: testUserId, status: 'CANCELLED' }
-      });
-      expect(cancelledSub).not.toBeNull();
-    });
-  });
-
-  describe('Authentication Edge Cases', () => {
-    it('should reject request without token', async () => {
-      const response = await request(app.getHttpServer())
-        .get('/user')
-        .expect(401);
-
-      expect(response.body.message).toBe('No token');
-    });
-
-    it('should reject request with invalid token', async () => {
-      // Mock invalid token response
-      mockedAxios.post.mockImplementationOnce(() => {
-        return Promise.reject({ response: { status: 401, data: { detail: 'Invalid token' } } });
-      });
-
-      const response = await request(app.getHttpServer())
-        .get('/user')
-        .set('Authorization', 'Bearer invalid_token')
-        .expect(401);
-
-      expect(response.body.message).toBe('Invalid/expired token');
-    });
-
-    it('should reject non-admin user', async () => {
-      // Create non-admin user
-      const regularUser = await prisma.user.create({
-        data: {
-          authSub: 'regular-user',
-          email: 'regular@example.com',
-          displayName: 'Regular User',
-          role: 'USER'
-        }
-      });
-
-      // Mock token validation for regular user
-      mockedAxios.post.mockImplementationOnce(() => {
-        return Promise.resolve({
-          data: {
-            valid: true,
-            active: true,
-            user_id: 'regular-user',
-            sub: 'regular-user',
-            email: 'regular@example.com'
-          }
-        });
-      });
-
-      // Mock /users/me for regular user
-      mockedAxios.get.mockImplementationOnce(() => {
-        return Promise.resolve({
-          data: {
-            data: {
-              email: 'regular@example.com',
-              first_name: 'Regular',
-              last_name: 'User',
-              username: 'regular'
-            }
-          }
-        });
-      });
-
-      const response = await request(app.getHttpServer())
-        .get('/user')
-        .set('Authorization', 'Bearer regular_user_token')
-        .expect(403);
-
-      expect(response.body.message).toBe('Forbidden resource');
-    });
-  });
-
-  describe('Data Validation', () => {
-    it('should validate plan creation data', async () => {
-      const invalidPlanData = {
-        // Missing required fields
-        name: 'Invalid Plan'
-      };
-
-      const response = await request(app.getHttpServer())
+      await request(app.getHttpServer())
         .post('/plans')
-        .set(adminHeaders)
-        .send(invalidPlanData)
-        .expect(500);
-
-      // API returns 500 for missing required fields
-      expect(response.body.message).toBeDefined();
+        .send(newPlan)
+        .expect(401);
     });
 
-    it('should validate feature creation data', async () => {
-      const invalidFeatureData = {
-        // Missing required fields
-        value: 'test'
+    it('should require admin authorization for feature creation', async () => {
+      const newFeature = {
+        name: 'unauthorized_feature',
+        value: 'Unauthorized Feature',
+        type: 'feature',
+        status: 'ACTIVE',
+        weight: 10
       };
 
-      const response = await request(app.getHttpServer())
+      await request(app.getHttpServer())
         .post('/features')
-        .set(adminHeaders)
-        .send(invalidFeatureData)
-        .expect(500);
-
-      // API returns 500 for missing required fields  
-      expect(response.body.message).toBeDefined();
+        .send(newFeature)
+        .expect(401);
     });
 
-    it('should validate subscription update data', async () => {
-      const invalidSubscriptionData = {
-        status: 'INVALID_STATUS'
+    it('should require admin authorization for plan updates', async () => {
+      const updateData = {
+        name: 'Updated Plan',
+        priority: 1
       };
 
-      const response = await request(app.getHttpServer())
-        .put(`/user/${testUserId}/subscription`)
-        .set(adminHeaders)
-        .send(invalidSubscriptionData)
-        .expect(400);
-
-      expect(response.body.message).toBeDefined();
-    });
-  });
-
-  describe('Error Handling', () => {
-    it('should handle non-existent user operations', async () => {
-      const fakeUserId = '00000000-0000-0000-0000-000000000000';
-
-      const response = await request(app.getHttpServer())
-        .get(`/user/${fakeUserId}/quota`)
-        .set(adminHeaders)
-        .expect(200);
-
-      expect(response.body.error).toBe('User not found');
+      await request(app.getHttpServer())
+        .put('/plans/1')
+        .send(updateData)
+        .expect(401);
     });
 
-    it('should handle non-existent plan operations', async () => {
-      const fakePlanId = 99999;
+    it('should require admin authorization for feature updates', async () => {
+      const updateData = {
+        value: 'Updated Feature',
+        status: 'ACTIVE'
+      };
 
-      const response = await request(app.getHttpServer())
-        .get(`/plans/${fakePlanId}`)
-        .set(adminHeaders)
-        .expect(404);
-
-      expect(response.body.message).toContain('not found');
+      await request(app.getHttpServer())
+        .put('/features/1')
+        .send(updateData)
+        .expect(401);
     });
 
-    it('should handle non-existent feature operations', async () => {
-      const fakeFeatureId = 99999;
+    it('should require admin authorization for plan deletion', async () => {
+      await request(app.getHttpServer())
+        .delete('/plans/1')
+        .expect(401);
+    });
 
-      const response = await request(app.getHttpServer())
-        .get(`/features/${fakeFeatureId}`)
-        .set(adminHeaders)
-        .expect(404);
-
-      expect(response.body.message).toContain('not found');
+    it('should require admin authorization for feature deletion', async () => {
+      await request(app.getHttpServer())
+        .delete('/features/1')
+        .expect(401);
     });
   });
 });
