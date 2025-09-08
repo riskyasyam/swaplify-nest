@@ -987,8 +987,8 @@
 							"listen": "test",
 							"script": {
 								"exec": [
-									"if (pm.response.code === 200) {\r",
-									"  pm.test(\"Status 200\", () => pm.response.to.have.status(200));\r",
+									"if (pm.response.code === 201) {\r",
+									"  pm.test(\"Status 201\", () => pm.response.to.have.status(201));\r",
 									"  let j = {}; try { j = pm.response.json(); } catch(e) {}\r",
 									"  pm.test(\"Requeue result ok\", () => {\r",
 									"    pm.expect(Boolean(j.id || j.message)).to.eql(true);\r",
@@ -999,9 +999,19 @@
 									"  });\r",
 									"} else {\r",
 									"  pm.test(\"Unexpected status\", () => {\r",
-									"    pm.expect.fail(`Got ${pm.response.code} instead of 200/404`);\r",
+									"    pm.expect.fail(`Got ${pm.response.code} instead of 201/404`);\r",
 									"  });\r",
 									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									""
 								],
 								"type": "text/javascript",
 								"packages": {}
@@ -1012,13 +1022,14 @@
 						"method": "POST",
 						"header": [],
 						"url": {
-							"raw": "{{url}}/jobs/{{jobs_id}}",
+							"raw": "{{url}}/jobs/{{jobs_id}}/requeue",
 							"host": [
 								"{{url}}"
 							],
 							"path": [
 								"jobs",
-								"{{jobs_id}}"
+								"{{jobs_id}}",
+								"requeue"
 							]
 						}
 					},
@@ -1168,7 +1179,7 @@
 		},
 		{
 			"key": "refresh_token",
-			"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjbGllbnRfaWQiOiJwcmltZWF1dGgtYWRtaW4iLCJleHAiOjE3NTc0MDA0NzMsImlhdCI6MTc1NzMxNDA3MywicmVhbG1faWQiOiI4OTMwZWY3NC1iNmNmLTQ2NWEtOWE3NC04ZjljYzU5MWMzZTMiLCJzY29wZSI6Im9wZW5pZCBwcm9maWxlIGVtYWlsIiwic3ViIjoiNjBlOTkyOWUtNmUzMC00MzFjLTlmMWItNTI5YjYxODY3NzU5IiwidG9rZW5fdHlwZSI6InJlZnJlc2gifQ.Do0CqHqM2afTdU-2lPQpRvZNRauqyYTsy3FwpDzlUh0"
+			"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjbGllbnRfaWQiOiJwcmltZWF1dGgtYWRtaW4iLCJleHAiOjE3NTc0MDkzMDgsImlhdCI6MTc1NzMyMjkwOCwicmVhbG1faWQiOiI4OTMwZWY3NC1iNmNmLTQ2NWEtOWE3NC04ZjljYzU5MWMzZTMiLCJzY29wZSI6Im9wZW5pZCBwcm9maWxlIGVtYWlsIiwic3ViIjoiNjBlOTkyOWUtNmUzMC00MzFjLTlmMWItNTI5YjYxODY3NzU5IiwidG9rZW5fdHlwZSI6InJlZnJlc2gifQ.9xLhqlyFuqNVHb1RpkbinoekKLBWakiXpZ6TQMOdu6Q"
 		},
 		{
 			"key": "code_plan",
