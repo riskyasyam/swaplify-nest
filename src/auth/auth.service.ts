@@ -1,10 +1,10 @@
-// src/auth/auth.service.ts
 import { Injectable, BadRequestException } from '@nestjs/common';
 import axios from 'axios';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { Role } from '@prisma/client';
 import { OidcProviderService } from './oidc-provider.service';
 import { decodeJwt } from './utils/jwt.util';
+import * as jwt from 'jsonwebtoken';
 
 type PrimeTokens = {
   access_token?: string;
@@ -303,7 +303,11 @@ export class AuthService {
     // Pastikan FREE subscription aktif (skema baru)
     await this.ensureFreeSubscription(user.id);
 
-    return { user, tokens };
+    // Use PrimeAuth's original refresh token (don't replace it)
+    return { 
+      user, 
+      tokens // ✅ Keep PrimeAuth's original refresh token
+    };
   }
 
   /**

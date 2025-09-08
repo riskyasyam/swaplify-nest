@@ -7,21 +7,152 @@
 	},
 	"item": [
 		{
+			"name": "Login PrimeAuth",
+			"item": [
+				{
+					"name": "Refresh Token",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status 200\", () => pm.response.to.have.status(201));\r",
+									"const j = pm.response.json();\r",
+									"\r",
+									"pm.test(\"Contains access_token, refresh_token, expires_in\", () => {\r",
+									"  pm.expect(j).to.have.property(\"access_token\");\r",
+									"  pm.expect(j).to.have.property(\"refresh_token\");\r",
+									"  pm.expect(j).to.have.property(\"expires_in\");\r",
+									"});\r",
+									"\r",
+									"// simpan env\r",
+									"pm.environment.set(\"bearer_token\", j.access_token);\r",
+									"pm.environment.set(\"prime_refresh_token\", j.refresh_token);\r",
+									"pm.environment.set(\"access_token_exp\", String(Math.floor(Date.now()/1000) + Number(j.expires_in)));\r",
+									"if (j.token_type) pm.environment.set(\"token_type\", j.token_type);\r",
+									"if (j.scope) pm.environment.set(\"scope\", j.scope);"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"refresh_token\":\"{{refresh_token}}\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}/auth/refresh",
+							"host": [
+								"{{url}}"
+							],
+							"path": [
+								"auth",
+								"refresh"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Logout",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status 200\", () => pm.response.to.have.status(201));\r",
+									"pm.test(\"Message Logged out\", () => {\r",
+									"  const j = pm.response.json();\r",
+									"  pm.expect(j.message).to.match(/logged out/i);\r",
+									"});\r",
+									"// bersihkan token\r",
+									"[\"bearer_token\",\"prime_refresh_token\",\"access_token_exp\"].forEach(k => pm.environment.unset(k));"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\"refresh_token\":\"{{refresh_token}}\"}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}/auth/logout",
+							"host": [
+								"{{url}}"
+							],
+							"path": [
+								"auth",
+								"logout"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
 			"name": "User",
 			"item": [
 				{
-					"name": "Get User",
+					"name": "Get All User",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status 200\", () => pm.response.to.have.status(200));\r",
+									"const arr = pm.response.json();\r",
+									"\r",
+									"pm.test(\"Is array\", () => pm.expect(arr).to.be.an(\"array\"));\r",
+									"if (Array.isArray(arr) && arr.length) {\r",
+									"  const u = arr[0];\r",
+									"  pm.test(\"User item shape\", () => {\r",
+									"    pm.expect(u).to.have.property(\"id\");\r",
+									"    pm.expect(u).to.have.property(\"email\");\r",
+									"    pm.expect(u).to.have.property(\"displayName\");\r",
+									"    pm.expect(u).to.have.property(\"role\");\r",
+									"    pm.expect(u).to.have.property(\"createdAt\");\r",
+									"  });\r",
+									"  if (u.id) pm.environment.set(\"user_id\", u.id);\r",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
 					"request": {
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{bearer_token}}",
-									"type": "string"
-								}
-							]
-						},
 						"method": "GET",
 						"header": [],
 						"url": {
@@ -43,17 +174,33 @@
 			"item": [
 				{
 					"name": "UPDATE Subscription to User",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status 200/201\", () => pm.expect([200,201]).to.include(pm.response.code));\r",
+									"let j = {};\r",
+									"try { j = pm.response.json(); } catch(e) {}\r",
+									"\r",
+									"const expectedPlan = pm.variables.get(\"plan\") || \"PRO\";\r",
+									"const expectedStatus = pm.variables.get(\"status\") || \"ACTIVE\";\r",
+									"\r",
+									"pm.test(\"Contains subscription result\", () => {\r",
+									"  const hasPlan = j.plan || (j.subscription && j.subscription.plan);\r",
+									"  const hasStatus = j.status || (j.subscription && j.subscription.status);\r",
+									"  pm.expect(Boolean(hasPlan || hasStatus || j.message)).to.eql(true);\r",
+									"});\r",
+									"\r",
+									"if (j.plan) pm.test(\"Plan updated\", () => pm.expect(j.plan).to.eql(expectedPlan));\r",
+									"if (j.status) pm.test(\"Status updated\", () => pm.expect(j.status).to.eql(expectedStatus));"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
 					"request": {
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{bearer_token}}",
-									"type": "string"
-								}
-							]
-						},
 						"method": "PUT",
 						"header": [
 							{
@@ -64,7 +211,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\r\n  \"plan\": \"PRO\",\r\n  \"status\": \"ACTIVE\"\r\n}",
+							"raw": "{\r\n  \"plan\": \"{{code_plan}}\",\r\n  \"status\": \"{{status_plan}}\"\r\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -86,18 +233,26 @@
 					"response": []
 				},
 				{
-					"name": "GET Plan Entitlements",
+					"name": "READ User's Subscription with Plan Entitlements",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status 200\", () => pm.response.to.have.status(200));\r",
+									"const j = pm.response.json();\r",
+									"\r",
+									"pm.test(\"Has plan and planEntitlements/quota\", () => {\r",
+									"  pm.expect(j).to.have.property(\"plan\");\r",
+									"  pm.expect(Boolean(j.planEntitlements || j.entitlements || j.quota)).to.eql(true);\r",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
 					"request": {
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{bearer_token}}",
-									"type": "string"
-								}
-							]
-						},
 						"method": "GET",
 						"header": [
 							{
@@ -123,115 +278,63 @@
 			]
 		},
 		{
-			"name": "Login PrimeAuth",
-			"item": [
-				{
-					"name": "Refresh Token",
-					"request": {
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{bearer_token}}",
-									"type": "string"
-								}
-							]
-						},
-						"method": "POST",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json",
-								"type": "text"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\r\n    \"refresh_token\":\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjbGllbnRfaWQiOiJwcmltZWF1dGgtYWRtaW4iLCJleHAiOjE3NTU4Mzg5NjgsImlhdCI6MTc1NTc1MjU2OCwicmVhbG1faWQiOiI4OTMwZWY3NC1iNmNmLTQ2NWEtOWE3NC04ZjljYzU5MWMzZTMiLCJzY29wZSI6Im9wZW5pZCBwcm9maWxlIGVtYWlsIiwic3ViIjoiNjBlOTkyOWUtNmUzMC00MzFjLTlmMWItNTI5YjYxODY3NzU5IiwidG9rZW5fdHlwZSI6InJlZnJlc2gifQ.QAUGFrpLGx1Is-BgXYkLxztq4OPV2CYpOGJ-cPpsZbQ\"\r\n}",
-							"options": {
-								"raw": {
-									"language": "json"
-								}
-							}
-						},
-						"url": {
-							"raw": "{{url}}/auth/prime/refresh",
-							"host": [
-								"{{url}}"
-							],
-							"path": [
-								"auth",
-								"prime",
-								"refresh"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Logout",
-					"request": {
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{bearer_token}}",
-									"type": "string"
-								}
-							]
-						},
-						"method": "POST",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json",
-								"type": "text"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\"refresh_token\":\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjbGllbnRfaWQiOiJwcmltZWF1dGgtYWRtaW4iLCJleHAiOjE3NTU3NTcyMDYsImlhdCI6MTc1NTY3MDgwNiwicmVhbG1faWQiOiI4OTMwZWY3NC1iNmNmLTQ2NWEtOWE3NC04ZjljYzU5MWMzZTMiLCJzY29wZSI6Im9wZW5pZCBwcm9maWxlIGVtYWlsIiwic3ViIjoiNjBlOTkyOWUtNmUzMC00MzFjLTlmMWItNTI5YjYxODY3NzU5IiwidG9rZW5fdHlwZSI6InJlZnJlc2gifQ.CjY0-3oagQdzfUQH69zxUYd-oH1TejtifNIefSpkl8Q\"}",
-							"options": {
-								"raw": {
-									"language": "json"
-								}
-							}
-						},
-						"url": {
-							"raw": "{{url}}/auth/prime/logout",
-							"host": [
-								"{{url}}"
-							],
-							"path": [
-								"auth",
-								"prime",
-								"logout"
-							]
-						}
-					},
-					"response": []
-				}
-			]
-		},
-		{
 			"name": "Plan",
 			"item": [
 				{
 					"name": "CREATE Plans",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status 201/200\", () => pm.expect([201,200]).to.include(pm.response.code));\r",
+									"\r",
+									"let data = {};\r",
+									"try { data = pm.response.json(); } catch (_) {}\r",
+									"\r",
+									"const planId =\r",
+									"  data.id ?? data.data?.id ?? data.result?.id ?? data.planId ?? data.result?.planId;\r",
+									"\r",
+									"pm.test(\"Plan created returns id\", () => pm.expect(planId, \"missing id\").to.exist);\r",
+									"if (planId) pm.environment.set(\"plans_id\", String(planId));\r",
+									"\r",
+									"const planName = data.name ?? data.data?.name ?? data.result?.name;\r",
+									"if (planName) pm.environment.set(\"plan_name\", String(planName));\r",
+									"\r",
+									"console.log(\"CREATE Plans →\", { planId, planName, raw: data });"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"function rand(n = 4) { return Math.random().toString(36).slice(2, 2 + n); }\r",
+									"const stamp = Date.now();\r",
+									"\r",
+									"// isi variable lokal (agar body dapat nilai)\r",
+									"pm.variables.set(\"code_plan\", `P-${stamp}-${rand()}`);\r",
+									"pm.variables.set(\"name_plan\", `Plan-${stamp}-${rand()}`);\r",
+									"if (pm.variables.get(\"priority_plan\") == null) pm.variables.set(\"priority_plan\", \"1\");\r",
+									"\r",
+									"// header JSON (+ optional auth)\r",
+									"pm.request.headers.upsert({ key: \"Content-Type\", value: \"application/json\" });\r",
+									"const at = pm.environment.get(\"access_token\") || pm.environment.get(\"bearer_token\");\r",
+									"if (at) pm.request.headers.upsert({ key: \"Authorization\", value: `Bearer ${at}` });"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
 					"request": {
 						"method": "POST",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json",
-								"type": "text"
-							}
-						],
+						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\r\n    \"code\":\"PROFESSIONAL\",\r\n    \"name\":\"Professional\",\r\n    \"priority\":20\r\n}",
+							"raw": "{\r\n    \"code\":\"{{code_plan}}\",\r\n    \"name\":\"{{name_plan}}\",\r\n    \"priority\":{{priority_plan}}\r\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -252,17 +355,44 @@
 				},
 				{
 					"name": "READ Plans",
-					"request": {
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{bearer_token}}",
-									"type": "string"
-								}
-							]
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status 200\", () => pm.response.to.have.status(200));\r",
+									"\r",
+									"let j;\r",
+									"try { j = pm.response.json(); } catch { j = []; }\r",
+									"if (!Array.isArray(j)) j = j.data ?? j.result ?? j.items ?? [];\r",
+									"\r",
+									"// pastikan array\r",
+									"pm.test(\"List is array\", () => pm.expect(Array.isArray(j)).to.be.true);\r",
+									"\r",
+									"// cek plan yang barusan dibuat ada di list (id vs planId)\r",
+									"const createdId = String(pm.environment.get(\"plans_id\") || \"\");\r",
+									"if (createdId) {\r",
+									"  const found = j.find(p => String(p.id ?? p.planId ?? p.ID) === createdId);\r",
+									"  pm.test(`Created plan ${createdId} is present in list`, () => pm.expect(found).to.exist);\r",
+									"}\r",
+									"console.log(\"READ Plans → count:\", j.length, \"sample:\", j[0]);"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
 						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
 						"method": "GET",
 						"header": [],
 						"url": {
@@ -279,6 +409,58 @@
 				},
 				{
 					"name": "UPDATE Plans",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status 200/204\", () => pm.expect([200,204]).to.include(pm.response.code));\r",
+									"\r",
+									"let data = {}; try { data = pm.response.json(); } catch {}\r",
+									"const id = data?.id ?? data?.data?.id ?? data?.result?.id ?? pm.environment.get(\"plans_id\");\r",
+									"pm.test(\"Updated plan has id\", () => pm.expect(id, \"missing id\").to.exist);"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"const baseUrl = (pm.environment.get(\"url\") || \"\").trim().replace(/\\/+$/,'');\r",
+									"const planId  = pm.environment.get(\"plans_id\");\r",
+									"\r",
+									"if (!baseUrl) {\r",
+									"  console.warn(\"⚠️ ENV `url` kosong. Pastikan URL request sudah hardcode atau isi env `url` (mis: http://localhost:3000).\");\r",
+									"}\r",
+									"\r",
+									"pm.test(\"Precondition: `plans_id` is set (run Create Plans first)\", () => {\r",
+									"  pm.expect(planId, \"Missing `plans_id`\").to.exist;\r",
+									"});\r",
+									"\r",
+									"// Headers + (opsional) Authorization\r",
+									"pm.request.headers.upsert({ key: \"Content-Type\", value: \"application/json\" });\r",
+									"const at = pm.environment.get(\"access_token\") || pm.environment.get(\"bearer_token\");\r",
+									"if (at) pm.request.headers.upsert({ key: \"Authorization\", value: `Bearer ${at}` });\r",
+									"\r",
+									"// Generate nilai random untuk body (tanpa sentuh pm.request.body)\r",
+									"function rand(n=5){ return Math.random().toString(36).slice(2, 2+n); }\r",
+									"const stamp = Date.now();\r",
+									"\r",
+									"pm.environment.set(\"name_plan\", `Plan-${stamp}-${rand()}`);\r",
+									"pm.environment.set(\"priority_plan\", String(Math.floor(Math.random()*10)+1)); // \"1\"..\"10\"\r",
+									"\r",
+									"console.log(\"UPDATE → vars\", {\r",
+									"  name: pm.environment.get(\"name_plan\"),\r",
+									"  priority: pm.environment.get(\"priority_plan\")\r",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
 					"request": {
 						"method": "PATCH",
 						"header": [
@@ -290,7 +472,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\r\n    \"code\": \"Professional Plus\",\r\n    \"name\":\"Pro Plus\",\r\n    \"priority\":30\r\n}",
+							"raw": "{\r\n  \"name\": \"{{name_plan}}\",\r\n  \"priority\": {{priority_plan}}\r\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -298,53 +480,106 @@
 							}
 						},
 						"url": {
-							"raw": "http://localhost:3000/plans/4",
-							"protocol": "http",
-							"host": [
-								"localhost"
-							],
-							"port": "3000",
-							"path": [
-								"plans",
-								"4"
-							]
-						}
-					},
-					"response": []
-				}
-			]
-		},
-		{
-			"name": "Plan Entitlements",
-			"item": [
-				{
-					"name": "UPSERT Entitlements",
-					"request": {
-						"method": "POST",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json",
-								"type": "text"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\r\n    \"version\":3,\r\n    \"max_video_sec\":120,\r\n    \"max_resolution\":\"1080p\",\r\n    \"concurrency\":1,\r\n    \"watermark\":false\r\n}",
-							"options": {
-								"raw": {
-									"language": "json"
-								}
-							}
-						},
-						"url": {
-							"raw": "{{url}}/plans/4/entitlements",
+							"raw": "{{url}}/plans/{{plans_id}}",
 							"host": [
 								"{{url}}"
 							],
 							"path": [
 								"plans",
-								"4",
+								"{{plans_id}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Upsert Entitlements to Plans",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"const baseUrl = (pm.environment.get(\"url\") || \"\").trim().replace(/\\/+$/,'');\r",
+									"const planId  = pm.environment.get(\"plans_id\");\r",
+									"\r",
+									"if (!baseUrl) {\r",
+									"  console.warn(\"⚠️ ENV `url` kosong. Pastikan URL request sudah hardcode atau isi env `url` (mis: http://localhost:3000).\");\r",
+									"}\r",
+									"\r",
+									"pm.test(\"Precondition: `plans_id` is set (run Create Plans first)\", () => {\r",
+									"  pm.expect(planId, \"Missing `plans_id`\").to.exist;\r",
+									"});\r",
+									"\r",
+									"// Headers + (opsional) Authorization\r",
+									"pm.request.headers.upsert({ key: \"Content-Type\", value: \"application/json\" });\r",
+									"const at = pm.environment.get(\"access_token\") || pm.environment.get(\"bearer_token\");\r",
+									"if (at) pm.request.headers.upsert({ key: \"Authorization\", value: `Bearer ${at}` });\r",
+									"\r",
+									"// Set default variable utk body kalau belum ada (pakai ENV agar konsisten antar request)\r",
+									"function def(name, val) {\r",
+									"  if (pm.environment.get(name) == null && pm.variables.get(name) == null) {\r",
+									"    pm.environment.set(name, val);\r",
+									"  }\r",
+									"}\r",
+									"def(\"version\", \"0\");           // angka: simpan sebagai string, dipakai tanpa quotes di body\r",
+									"def(\"max_video_sec\", \"120\");\r",
+									"def(\"max_resolution\", \"1080p\"); // string → akan di-quote di body\r",
+									"def(\"concurrency\", \"1\");\r",
+									"def(\"watermark\", \"false\");      // boolean (tanpa quotes di body)\r",
+									"\r",
+									"console.log(\"UPSERT → vars\", {\r",
+									"  version: pm.environment.get(\"version\"),\r",
+									"  max_video_sec: pm.environment.get(\"max_video_sec\"),\r",
+									"  max_resolution: pm.environment.get(\"max_resolution\"),\r",
+									"  concurrency: pm.environment.get(\"concurrency\"),\r",
+									"  watermark: pm.environment.get(\"watermark\")\r",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status 200/201/204\", () => pm.expect([200,201,204]).to.include(pm.response.code));\r",
+									"\r",
+									"let body = null;\r",
+									"try { body = pm.response.json(); } catch (_) {}\r",
+									"\r",
+									"if (body) {\r",
+									"  pm.test(\"Response has version or entitlements\", () => {\r",
+									"    pm.expect(body.version !== undefined || body.entitlements !== undefined).to.be.true;\r",
+									"  });\r",
+									"}\r",
+									"console.log(\"UPSERT Entitlements →\", { status: pm.response.code, body });"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"version\": {{version}},\r\n  \"max_video_sec\": {{max_video_sec}},\r\n  \"max_resolution\": \"{{max_resolution}}\",\r\n  \"concurrency\": {{concurrency}},\r\n  \"watermark\": {{watermark}}\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}/plans/{{plans_id}}/entitlements",
+							"host": [
+								"{{url}}"
+							],
+							"path": [
+								"plans",
+								"{{plans_id}}",
 								"entitlements"
 							]
 						}
@@ -352,27 +587,91 @@
 					"response": []
 				},
 				{
-					"name": "READ ID with Entitlements",
+					"name": "READ Plans ID with Entitlements",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status 200\", () => pm.response.to.have.status(200));\r",
+									"\r",
+									"let j = {};\r",
+									"try { j = pm.response.json(); } catch (_) {}\r",
+									"\r",
+									"const idFromEnv = pm.environment.get(\"plans_id\");\r",
+									"const idInBody = j.id ?? j.data?.id ?? j.result?.id ?? j.planId ?? j.result?.planId;\r",
+									"\r",
+									"// id (opsional—tergantung bentuk response endpoint-mu)\r",
+									"if (idFromEnv || idInBody) {\r",
+									"  pm.test(\"Matching plan id (if present)\", () => {\r",
+									"    pm.expect(String(idInBody || idFromEnv)).to.eql(String(idFromEnv || idInBody));\r",
+									"  });\r",
+									"}\r",
+									"\r",
+									"// entitlements must exist (bentuk fleksibel)\r",
+									"const ents =\r",
+									"  j.entitlements ??\r",
+									"  j.planEntitlements ??\r",
+									"  j.data?.entitlements ??\r",
+									"  j.result?.entitlements ??\r",
+									"  j.plan?.entitlements;\r",
+									"\r",
+									"pm.test(\"Has entitlements\", () => pm.expect(ents, \"missing entitlements\").to.exist);\r",
+									"if (ents) {\r",
+									"  pm.test(\"Entitlements is array/object\", () => {\r",
+									"    pm.expect(Array.isArray(ents) || typeof ents === 'object').to.be.true;\r",
+									"  });\r",
+									"}\r",
+									"\r",
+									"console.log(\"READ Plan by ID w/ Entitlements →\", { idFromEnv, idInBody, keys: Object.keys(j || {}) });"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
 					"request": {
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{bearer_token}}",
-									"type": "string"
-								}
-							]
-						},
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{url}}/plans",
+							"raw": "{{url}}/plans/{{plans_id}}",
 							"host": [
 								"{{url}}"
 							],
 							"path": [
-								"plans"
+								"plans",
+								"{{plans_id}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "DELETE Plans",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status 200/204\", () => pm.expect([200,204]).to.include(pm.response.code));\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{url}}/plans/{{plans_id}}",
+							"host": [
+								"{{url}}"
+							],
+							"path": [
+								"plans",
+								"{{plans_id}}"
 							]
 						}
 					},
@@ -385,6 +684,43 @@
 			"item": [
 				{
 					"name": "CREATE Feature",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status 201/200\", () => pm.expect([201,200]).to.include(pm.response.code));\r",
+									"\r",
+									"let data = {};\r",
+									"try { data = pm.response.json(); } catch(e){}\r",
+									"\r",
+									"const featureId = data.id ?? data.data?.id ?? data.result?.id;\r",
+									"pm.test(\"Feature created returns id\", () => pm.expect(featureId, \"missing id\").to.exist);\r",
+									"\r",
+									"if (featureId) pm.environment.set(\"features_id\", String(featureId));"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"function rand(n=4){ return Math.random().toString(36).substring(2, 2+n); }\r",
+									"const stamp = Date.now();\r",
+									"\r",
+									"pm.variables.set(\"features_name\", `feat-${stamp}-${rand()}`);\r",
+									"pm.variables.set(\"features_value\", pm.variables.get(\"features_value\") ?? \"true\");\r",
+									"pm.variables.set(\"features_type\", pm.variables.get(\"features_type\") ?? \"BOOLEAN\");\r",
+									"pm.variables.set(\"features_status\", pm.variables.get(\"features_status\") ?? \"ACTIVE\");\r",
+									"pm.variables.set(\"features_weight\", pm.variables.get(\"features_weight\") ?? \"1\");"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
 					"request": {
 						"method": "POST",
 						"header": [
@@ -396,7 +732,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\r\n    \"name\":\"facafaceeeeee\",\r\n    \"value\":\"enabled\",\r\n    \"type\":\"processor\",\r\n    \"status\":\"ACTIVE\"\r\n}",
+							"raw": "{\r\n    \"name\":\"{{features_name}}\",\r\n    \"value\":\"{{features_value}}\",\r\n    \"type\":\"{{features_type}}\",\r\n    \"status\":\"{{features_status}}\",\r\n    \"weight\":{{features_weight}}\r\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -417,6 +753,21 @@
 				},
 				{
 					"name": "READ All Features",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status 200\", () => pm.response.to.have.status(200));\r",
+									"const j = pm.response.json();\r",
+									"const list = Array.isArray(j) ? j : (j.data || j.items || j.results || []);\r",
+									"pm.test(\"List is array\", () => pm.expect(list).to.be.an(\"array\"));"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
 					"request": {
 						"method": "GET",
 						"header": [],
@@ -434,6 +785,25 @@
 				},
 				{
 					"name": "UPDATE Features",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status 200/204\", () => pm.expect([200,204]).to.include(pm.response.code));\r",
+									"\r",
+									"if (pm.response.code === 200) {\r",
+									"  let data = {};\r",
+									"  try { data = pm.response.json(); } catch (e) {}\r",
+									"  const featureId = data.id ?? data.data?.id ?? data.result?.id ?? pm.variables.get(\"features_id\");\r",
+									"  pm.test(\"Feature updated has id\", () => pm.expect(featureId).to.exist);\r",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
 					"request": {
 						"method": "PATCH",
 						"header": [
@@ -445,16 +815,16 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\r\n    \"name\":\"faceASYAAAAAAAM\",\r\n    \"value\":\"enabled\",\r\n    \"type\":\"processor\",\r\n    \"status\":\"ACTIVE\"\r\n}"
+							"raw": "{\r\n    \"name\":\"{{features_name}}\",\r\n    \"value\":\"{{features_value}}\",\r\n    \"type\":\"{{features_type}}\",\r\n    \"status\":\"{{features_status}}\"\r\n}"
 						},
 						"url": {
-							"raw": "{{url}}/features/48",
+							"raw": "{{url}}/features/{{features_id}}",
 							"host": [
 								"{{url}}"
 							],
 							"path": [
 								"features",
-								"48"
+								"{{features_id}}"
 							]
 						}
 					},
@@ -462,17 +832,30 @@
 				},
 				{
 					"name": "DELETE Features",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status 200/204\", () => pm.expect([200,204]).to.include(pm.response.code));\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
 					"request": {
 						"method": "DELETE",
 						"header": [],
 						"url": {
-							"raw": "{{url}}/features/48",
+							"raw": "{{url}}/features/{{features_id}}",
 							"host": [
 								"{{url}}"
 							],
 							"path": [
 								"features",
-								"48"
+								"{{features_id}}"
 							]
 						}
 					},
@@ -484,100 +867,30 @@
 			"name": "Jobs",
 			"item": [
 				{
-					"name": "Uploaded (Step 1)",
-					"request": {
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjbGllbnRfaWQiOiJwcmltZWF1dGgtYWRtaW4iLCJleHAiOjE3NTYwOTkxMjcsImlhdCI6MTc1NjA5NTUyNywicmVhbG1faWQiOiI4OTMwZWY3NC1iNmNmLTQ2NWEtOWE3NC04ZjljYzU5MWMzZTMiLCJzY29wZSI6Im9wZW5pZCBwcm9maWxlIGVtYWlsIiwic3ViIjoiNjBlOTkyOWUtNmUzMC00MzFjLTlmMWItNTI5YjYxODY3NzU5IiwidG9rZW5fdHlwZSI6ImFjY2VzcyJ9.4fZPi4hEBXBSFdVbHa0gCqFyDpuflripg0SsoejWEU8",
-									"type": "string"
-								}
-							]
-						},
-						"method": "POST",
-						"header": [],
-						"body": {
-							"mode": "formdata",
-							"formdata": [
-								{
-									"key": "source",
-									"type": "file",
-									"src": "/C:/Users/Asyam/Documents/asset_post/udin.jpeg"
-								},
-								{
-									"key": "target",
-									"type": "file",
-									"src": "/C:/Users/Asyam/Documents/asset_post/tes video 2 orang.mp4"
-								},
-								{
-									"key": "audio",
-									"type": "file",
-									"src": []
-								},
-								{
-									"key": "processors",
-									"value": "[\"face_swapper\"]",
-									"type": "text"
-								},
-								{
-									"key": "options",
-									"value": "{ \"faceSwap\": { \"model\": \"v1\", \"threshold\": 0.8 } }",
-									"type": "text"
-								}
-							]
-						},
-						"url": {
-							"raw": "{{url}}/jobs/uploaded",
-							"host": [
-								"{{url}}"
-							],
-							"path": [
-								"jobs",
-								"uploaded"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Process with ID (Step 2)",
-					"request": {
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjbGllbnRfaWQiOiJwcmltZWF1dGgtYWRtaW4iLCJleHAiOjE3NTYxMDUyOTQsImlhdCI6MTc1NjEwMTY5NCwicmVhbG1faWQiOiI4OTMwZWY3NC1iNmNmLTQ2NWEtOWE3NC04ZjljYzU5MWMzZTMiLCJzY29wZSI6Im9wZW5pZCBwcm9maWxlIGVtYWlsIiwic3ViIjoiNjBlOTkyOWUtNmUzMC00MzFjLTlmMWItNTI5YjYxODY3NzU5IiwidG9rZW5fdHlwZSI6ImFjY2VzcyJ9.KeRfuiR_NNUpb0BpcZNyUfJLwiQtX4XO7p2KaBCth0Q",
-									"type": "string"
-								}
-							]
-						},
-						"method": "POST",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json",
-								"type": "text"
-							}
-						],
-						"url": {
-							"raw": "{{url}}/jobs/cmeqmpfc70001ux844m7e5bia/process",
-							"host": [
-								"{{url}}"
-							],
-							"path": [
-								"jobs",
-								"cmeqmpfc70001ux844m7e5bia",
-								"process"
-							]
-						}
-					},
-					"response": []
-				},
-				{
 					"name": "Upload + Process (1 Step Gabungan)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status 200/201\", () => pm.expect([200,201]).to.include(pm.response.code));\r",
+									"\r",
+									"let data = {};\r",
+									"try { data = pm.response.json(); } catch (e) {}\r",
+									"\r",
+									"const jobId = data.id ?? data.job?.id ?? data.data?.id;\r",
+									"pm.test(\"Job id present\", () => pm.expect(jobId, \"no job id in response\").to.exist);\r",
+									"\r",
+									"if (jobId) pm.environment.set(\"jobs_id\", String(jobId));"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"protocolProfileBehavior": {
+						"disabledSystemHeaders": {}
+					},
 					"request": {
 						"method": "POST",
 						"header": [],
@@ -586,38 +899,37 @@
 							"formdata": [
 								{
 									"key": "source",
-									"value": "",
-									"type": "text"
+									"type": "file",
+									"src": "postman-cloud:///1f08c67b-3005-4930-9d53-cb09c475f068"
 								},
 								{
 									"key": "target",
-									"value": "",
-									"type": "text"
+									"type": "file",
+									"src": "postman-cloud:///1f08c67b-d6ef-4110-b84a-14d29b7bae45"
 								},
 								{
 									"key": "audio",
-									"value": "",
-									"type": "text"
+									"type": "file",
+									"src": [],
+									"disabled": true
 								},
 								{
 									"key": "processors",
-									"value": "",
+									"value": "[\"{{processors}}\"]",
 									"type": "text"
 								},
 								{
 									"key": "options",
-									"value": "",
+									"value": "{{options}}",
 									"type": "text"
 								}
 							]
 						},
 						"url": {
-							"raw": "http://localhost:3000/jobs/uploaded-process",
-							"protocol": "http",
+							"raw": "{{url}}/jobs/uploaded-process",
 							"host": [
-								"localhost"
+								"{{url}}"
 							],
-							"port": "3000",
 							"path": [
 								"jobs",
 								"uploaded-process"
@@ -628,58 +940,85 @@
 				},
 				{
 					"name": "Status Job",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status 200\", () => pm.response.to.have.status(200));\r",
+									"const j = pm.response.json();\r",
+									"\r",
+									"pm.test(\"Has id & status\", () => {\r",
+									"  pm.expect(j).to.have.property(\"id\");\r",
+									"  pm.expect(j).to.have.property(\"status\");\r",
+									"});\r",
+									"\r",
+									"// Izinkan status tambahan yang valid\r",
+									"pm.test(\"Status is known state\", () => {\r",
+									"  pm.expect([\"queued\",\"processing\",\"running\",\"failed\",\"success\",\"completed\"])\r",
+									"    .to.include(j.status.toLowerCase());\r",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
 					"request": {
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{bearer_token}}",
-									"type": "string"
-								}
-							]
-						},
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "http://localhost:3000/jobs/cmeta8ev20001uxxws0i7lx8i",
-							"protocol": "http",
+							"raw": "{{url}}/jobs/{{jobs_id}}",
 							"host": [
-								"localhost"
+								"{{url}}"
 							],
-							"port": "3000",
 							"path": [
 								"jobs",
-								"cmeta8ev20001uxxws0i7lx8i"
+								"{{jobs_id}}"
 							]
 						}
 					},
 					"response": []
 				},
 				{
-					"name": "Requeue / Re Send / Re Test",
+					"name": "Requeue Failed Jobs",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {\r",
+									"  pm.test(\"Status 200\", () => pm.response.to.have.status(200));\r",
+									"  let j = {}; try { j = pm.response.json(); } catch(e) {}\r",
+									"  pm.test(\"Requeue result ok\", () => {\r",
+									"    pm.expect(Boolean(j.id || j.message)).to.eql(true);\r",
+									"  });\r",
+									"} else if (pm.response.code === 404) {\r",
+									"  pm.test(\"Requeue skipped (job not failed)\", () => {\r",
+									"    pm.expect(pm.response.code).to.eql(404);\r",
+									"  });\r",
+									"} else {\r",
+									"  pm.test(\"Unexpected status\", () => {\r",
+									"    pm.expect.fail(`Got ${pm.response.code} instead of 200/404`);\r",
+									"  });\r",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
 					"request": {
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{bearer_token}}",
-									"type": "string"
-								}
-							]
-						},
 						"method": "POST",
 						"header": [],
 						"url": {
-							"raw": "{{url}}/jobs/cmewcg3hf0001uxd4f5j7v7xk/requeue",
+							"raw": "{{url}}/jobs/{{jobs_id}}",
 							"host": [
 								"{{url}}"
 							],
 							"path": [
 								"jobs",
-								"cmewcg3hf0001uxd4f5j7v7xk",
-								"requeue"
+								"{{jobs_id}}"
 							]
 						}
 					},
@@ -692,17 +1031,27 @@
 			"item": [
 				{
 					"name": "Get Quota Today",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status 200\", () => pm.response.to.have.status(200));\r",
+									"const j = pm.response.json();\r",
+									"\r",
+									"// Sesuaikan ke field yang memang ada di response\r",
+									"pm.test(\"Quota response has totals & remaining\", () => {\r",
+									"  pm.expect(j).to.have.property(\"jobsTotal\");\r",
+									"  pm.expect(j).to.have.property(\"daily_weight_quota\");\r",
+									"  pm.expect(j).to.have.property(\"remaining\");\r",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
 					"request": {
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{bearer_token}}",
-									"type": "string"
-								}
-							]
-						},
 						"method": "GET",
 						"header": [],
 						"url": {
@@ -721,6 +1070,16 @@
 			]
 		}
 	],
+	"auth": {
+		"type": "bearer",
+		"bearer": [
+			{
+				"key": "token",
+				"value": "{{bearer_token}}",
+				"type": "string"
+			}
+		]
+	},
 	"event": [
 		{
 			"listen": "prerequest",
@@ -728,7 +1087,46 @@
 				"type": "text/javascript",
 				"packages": {},
 				"exec": [
-					""
+					"(function () {\r",
+					"  const baseUrl = pm.environment.get(\"url\");\r",
+					"  const at = pm.environment.get(\"bearer_token\");\r",
+					"  const rt = pm.environment.get(\"prime_refresh_token\");\r",
+					"  const exp = Number(pm.environment.get(\"access_token_exp\") || 0);\r",
+					"  const now = Math.floor(Date.now()/1000);\r",
+					"\r",
+					"  if (!baseUrl || !rt) return;\r",
+					"\r",
+					"  const willExpireSoon = !at || (exp && (exp - now) < 90);\r",
+					"  if (!willExpireSoon) return;\r",
+					"\r",
+					"  // cegah refresh ganda\r",
+					"  if (pm.environment.get(\"refresh_in_flight\") === \"1\") return;\r",
+					"  const last = Number(pm.environment.get(\"last_refresh_at\") || 0);\r",
+					"  if (now - last < 30) return; // cooldown\r",
+					"\r",
+					"  pm.environment.set(\"refresh_in_flight\", \"1\");\r",
+					"\r",
+					"  pm.sendRequest({\r",
+					"    url: baseUrl + \"/auth/refresh\",\r",
+					"    method: \"POST\",\r",
+					"    header: { \"Content-Type\": \"application/json\" },\r",
+					"    body: { mode: \"raw\", raw: JSON.stringify({ refresh_token: rt }) }\r",
+					"  }, function (err, res) {\r",
+					"    pm.environment.unset(\"refresh_in_flight\");\r",
+					"    pm.environment.set(\"last_refresh_at\", String(Math.floor(Date.now()/1000)));\r",
+					"    if (err || !res) return;\r",
+					"    try {\r",
+					"      const j = res.json();\r",
+					"      if (j.access_token) pm.environment.set(\"bearer_token\", j.access_token);\r",
+					"      if (j.refresh_token) pm.environment.set(\"prime_refresh_token\", j.refresh_token);\r",
+					"      if (j.expires_in) {\r",
+					"        pm.environment.set(\"access_token_exp\", String(Math.floor(Date.now()/1000) + Number(j.expires_in)));\r",
+					"      }\r",
+					"      if (j.token_type) pm.environment.set(\"token_type\", j.token_type);\r",
+					"      if (j.scope) pm.environment.set(\"scope\", j.scope);\r",
+					"    } catch (_) {}\r",
+					"  });\r",
+					"})();"
 				]
 			}
 		},
@@ -746,7 +1144,7 @@
 	"variable": [
 		{
 			"key": "bearer_token",
-			"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjbGllbnRfaWQiOiJwcmltZWF1dGgtYWRtaW4iLCJleHAiOjE3NTYxMTE3NjMsImlhdCI6MTc1NjEwODE2MywicmVhbG1faWQiOiI4OTMwZWY3NC1iNmNmLTQ2NWEtOWE3NC04ZjljYzU5MWMzZTMiLCJzY29wZSI6Im9wZW5pZCBwcm9maWxlIGVtYWlsIiwic3ViIjoiNjBlOTkyOWUtNmUzMC00MzFjLTlmMWItNTI5YjYxODY3NzU5IiwidG9rZW5fdHlwZSI6ImFjY2VzcyJ9.c5beSBne7szgETYXvGul2IMnBsrcawVG4J_3vUwLnlg"
+			"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjbGllbnRfaWQiOiJwcmltZWF1dGgtYWRtaW4iLCJleHAiOjE3NTczMDMyNDcsImlhdCI6MTc1NzI5OTY0NywicmVhbG1faWQiOiI4OTMwZWY3NC1iNmNmLTQ2NWEtOWE3NC04ZjljYzU5MWMzZTMiLCJzY29wZSI6Im9wZW5pZCBwcm9maWxlIGVtYWlsIiwic3ViIjoiNjBlOTkyOWUtNmUzMC00MzFjLTlmMWItNTI5YjYxODY3NzU5IiwidG9rZW5fdHlwZSI6ImFjY2VzcyJ9.WsYwGPh4wYQA81PCHNhhvvViT-ImxHH3iJxhb8B5hQQ"
 		},
 		{
 			"key": "url",
@@ -754,8 +1152,87 @@
 		},
 		{
 			"key": "user_id",
-			"value": "113ccfa7-7bdc-4b35-88b6-e78db4f0293d",
-			"type": "string"
+			"value": "113ccfa7-7bdc-4b35-88b6-e78db4f0293d"
+		},
+		{
+			"key": "plans_id",
+			"value": "1"
+		},
+		{
+			"key": "features_id",
+			"value": "25"
+		},
+		{
+			"key": "jobs_id",
+			"value": ""
+		},
+		{
+			"key": "refresh_token",
+			"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjbGllbnRfaWQiOiJwcmltZWF1dGgtYWRtaW4iLCJleHAiOjE3NTc0MDA0NzMsImlhdCI6MTc1NzMxNDA3MywicmVhbG1faWQiOiI4OTMwZWY3NC1iNmNmLTQ2NWEtOWE3NC04ZjljYzU5MWMzZTMiLCJzY29wZSI6Im9wZW5pZCBwcm9maWxlIGVtYWlsIiwic3ViIjoiNjBlOTkyOWUtNmUzMC00MzFjLTlmMWItNTI5YjYxODY3NzU5IiwidG9rZW5fdHlwZSI6InJlZnJlc2gifQ.Do0CqHqM2afTdU-2lPQpRvZNRauqyYTsy3FwpDzlUh0"
+		},
+		{
+			"key": "code_plan",
+			"value": "PREMIUM"
+		},
+		{
+			"key": "status_plan",
+			"value": "ACTIVE"
+		},
+		{
+			"key": "name_plan",
+			"value": "Premium"
+		},
+		{
+			"key": "priority_plan",
+			"value": "2"
+		},
+		{
+			"key": "version",
+			"value": "3"
+		},
+		{
+			"key": "max_video_sec",
+			"value": "120"
+		},
+		{
+			"key": "max_resolution",
+			"value": "1080p"
+		},
+		{
+			"key": "concurrency",
+			"value": "1"
+		},
+		{
+			"key": "watermark",
+			"value": "false"
+		},
+		{
+			"key": "features_name",
+			"value": "face_detector_model"
+		},
+		{
+			"key": "features_value",
+			"value": "enabled"
+		},
+		{
+			"key": "features_type",
+			"value": "processor"
+		},
+		{
+			"key": "features_status",
+			"value": "ACTIVE"
+		},
+		{
+			"key": "processors",
+			"value": "face_swapper"
+		},
+		{
+			"key": "options",
+			"value": "{\"faceSwapperModel\":\"inswapper_128\",\"useCuda\":true,\"deviceId\":\"0\"}"
+		},
+		{
+			"key": "features_weight",
+			"value": "3"
 		}
 	]
 }
