@@ -1,6 +1,6 @@
 import {
   Controller, Post, UseInterceptors, UploadedFile, Body,
-  BadRequestException, Req, UseGuards, Get, Param,
+  BadRequestException, Req, UseGuards, Get, Param, Query,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import type { Express } from 'express';
@@ -50,5 +50,32 @@ export class MediaAssetsController {
     }
     
     return this.svc.findById(assetId);
+  }
+
+  @UseGuards(PrimeAuthIntrospectionGuard)
+  @Get('output/facefusion')
+  async getFaceFusionOutputs(
+    @Req() req: any,
+    @Query('skip') skip?: string,
+    @Query('take') take?: string,
+  ) {
+    const userId: string | undefined = req.user?.id;
+    if (!userId) throw new BadRequestException('Invalid user in token');
+
+    const skipNum = skip ? parseInt(skip) : 0;
+    const takeNum = take ? parseInt(take) : 20;
+
+    // Validate pagination parameters
+    if (isNaN(skipNum) || skipNum < 0) {
+      throw new BadRequestException('skip must be a non-negative number');
+    }
+    if (isNaN(takeNum) || takeNum < 1 || takeNum > 100) {
+      throw new BadRequestException('take must be between 1 and 100');
+    }
+
+    return this.svc.getFaceFusionOutputsByUserId(userId, {
+      skip: skipNum,
+      take: takeNum,
+    });
   }
 }

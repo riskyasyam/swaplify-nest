@@ -146,6 +146,83 @@ export class MediaAssetsService {
 
     return asset;
   }
+
+  /**
+   * Get FaceFusion output media assets for a specific user
+   */
+  async getFaceFusionOutputsByUserId(userId: string, options: { skip?: number; take?: number } = {}) {
+    const { skip = 0, take = 20 } = options;
+
+    // Find media assets that are outputs from FaceFusion jobs
+    const assets = await this.prisma.mediaAsset.findMany({
+      where: {
+        userId,
+        // Filter untuk media assets yang merupakan output dari job
+        outputForJobs: {
+          some: {
+            // Bisa tambahkan filter lain jika perlu, misalnya jobType: 'FACE_SWAP'
+          }
+        },
+        // Filter bucket untuk facefusion-output
+        bucket: 'facefusion-output'
+      },
+      select: {
+        id: true,
+        type: true,
+        bucket: true,
+        objectKey: true,
+        path: true,
+        mimeType: true,
+        width: true,
+        height: true,
+        durationSec: true,
+        sizeBytes: true,
+        createdAt: true,
+        // Include job information untuk context
+        outputForJobs: {
+          select: {
+            id: true,
+            processors: true,
+            status: true,
+            createdAt: true,
+            finishedAt: true
+          }
+        }
+      },
+      orderBy: {
+        createdAt: 'desc'
+      },
+      skip,
+      take
+    });
+
+    // Get total count for pagination
+    const total = await this.prisma.mediaAsset.count({
+      where: {
+        userId,
+        outputForJobs: {
+          some: {}
+        },
+        bucket: 'facefusion-output'
+      }
+    });
+
+    // Convert BigInt to string untuk JSON serialization
+    const assetsWithStringSize = assets.map(asset => ({
+      ...asset,
+      sizeBytes: asset.sizeBytes ? asset.sizeBytes.toString() : null
+    }));
+
+    return {
+      data: assetsWithStringSize,
+      pagination: {
+        skip,
+        take,
+        total,
+        hasMore: skip + take < total
+      }
+    };
+  }
 }
 
 function cryptoRandom(len = 6) {

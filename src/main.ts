@@ -9,7 +9,7 @@ async function bootstrap() {
 
   // agar cookie httpOnly bisa terkirim dari FE (ubah origin sesuai FE kamu)
   app.enableCors({
-    origin: process.env.FRONTEND_ORIGIN ?? 'http://localhost:5173',
+    origin: process.env.FRONTEND_ORIGIN ?? 'http://localhost:3001',
     credentials: true, // penting untuk cookie
   });
 
