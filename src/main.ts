@@ -3,6 +3,7 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import cookieParser from 'cookie-parser';
+import { GlobalExceptionFilter } from './common/filters/global-exception.filter';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -15,6 +16,9 @@ async function bootstrap() {
 
   // parse cookie (dipakai JwtAuthGuard membaca cookie access_token)
   app.use(cookieParser(process.env.COOKIE_SECRET || 'dev-secret'));
+
+  // Global exception filter untuk handle semua error
+  app.useGlobalFilters(new GlobalExceptionFilter());
 
   // validation pipe global
   app.useGlobalPipes(

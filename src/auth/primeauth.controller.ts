@@ -46,20 +46,65 @@ export class PrimeAuthController {
   // GET /auth/callback  <-- ini cocok dengan REDIRECT_URI-mu
   @Public()
   @Get('callback')
-  async callback(@Query('code') code: string) {
+  async callback(@Query('code') code: string, @Res() res: Response) {
     if (!code) throw new BadRequestException('Missing authorization code');
+    
+    try {
+      const { user, tokens } = await this.authService.handlePrimeAuthCallback(code);
+      
+      // Prioritaskan id_token untuk JWT validation
+      const jwt_token = tokens.id_token ?? tokens.access_token;
+      
+      // Set tokens as HTTP-only cookies (more secure)
+      res.cookie('access_token', jwt_token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 24 * 60 * 60 * 1000, // 24 hours
+        path: '/'
+      });
+      
+      res.cookie('refresh_token', tokens.refresh_token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+        path: '/'
+      });
+
+      // Redirect ke frontend success page
+      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3001';
+      const redirectUrl = `${frontendUrl}/auth/success?user_id=${user.id}&email=${encodeURIComponent(user.email || '')}`;
+      
+      return res.redirect(redirectUrl);
+      
+    } catch (error) {
+      // Jika error, redirect ke error page
+      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+      const errorUrl = `${frontendUrl}/auth/error?message=${encodeURIComponent('Login failed')}`;
+      return res.redirect(errorUrl);
+    }
+  }
+
+  // GET /auth/callback-debug - Debug version yang return JSON (for testing)
+  @Public()
+  @Get('callback-debug')
+  async callbackDebug(@Query('code') code: string) {
+    if (!code) throw new BadRequestException('Missing authorization code');
+    
     const { user, tokens } = await this.authService.handlePrimeAuthCallback(code);
     
     // Prioritaskan id_token untuk JWT validation
     const jwt_token = tokens.id_token ?? tokens.access_token;
     
     return {
-      message: 'Login berhasil',
+      message: 'Login berhasil (Debug Mode)',
       access_token: jwt_token,
       id_token: tokens.id_token,
       raw_access_token: tokens.access_token,
       refresh_token: tokens.refresh_token,
       user,
+      note: 'This endpoint is for testing only. Use /auth/callback for production.'
     };
   }
 
@@ -81,12 +126,54 @@ export class PrimeAuthController {
       process.env.PRIMEAUTH_TOKEN_URL ||
       `${process.env.PRIMEAUTH_AUTH_SERVICE_URL}/realms/${process.env.REALM_ID}/protocol/openid-connect/token`;
 
-    const { data } = await axios.post(tokenUrl, body, {
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      timeout: 8000,
-    });
+    try {
+      const { data } = await axios.post(tokenUrl, body, {
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        timeout: 8000,
+      });
 
-    return { message: 'Token refreshed', ...data };
+      return { message: 'Token refreshed', ...data };
+    } catch (error) {
+      // Handle different types of refresh token errors
+      if (axios.isAxiosError(error)) {
+        const status = error.response?.status;
+        const errorData = error.response?.data;
+        
+        if (status === 400) {
+          // Refresh token expired or invalid
+          throw new BadRequestException({
+            message: 'Refresh token is invalid or expired',
+            error: 'invalid_refresh_token',
+            details: errorData?.error_description || 'Please login again',
+            statusCode: 400
+          });
+        } else if (status === 401) {
+          // Unauthorized
+          throw new BadRequestException({
+            message: 'Authentication failed',
+            error: 'unauthorized',
+            details: 'Please login again',
+            statusCode: 401
+          });
+        } else if (status && status >= 500) {
+          // Server error
+          throw new BadRequestException({
+            message: 'Authentication server error',
+            error: 'server_error',
+            details: 'Please try again later',
+            statusCode: 502
+          });
+        }
+      }
+      
+      // Generic error for unexpected cases
+      throw new BadRequestException({
+        message: 'Failed to refresh token',
+        error: 'refresh_failed',
+        details: 'Please login again',
+        statusCode: 400
+      });
+    }
   }
 
   // POST /auth/logout (opsional)
@@ -109,6 +196,80 @@ export class PrimeAuthController {
       }
     } catch {}
     return { message: 'Logged out' };
+  }
+
+  // GET /auth/me - Get current user info from cookies
+  @Public()
+  @Get('me')
+  async getCurrentUser(@Req() req: Request) {
+    const accessToken = req.cookies?.access_token;
+    if (!accessToken) {
+      throw new BadRequestException('No access token found');
+    }
+
+    try {
+      // Decode JWT to get user info
+      const jwt = require('jsonwebtoken');
+      const payload = jwt.decode(accessToken);
+      
+      if (!payload) {
+        throw new BadRequestException('Invalid access token');
+      }
+
+      return {
+        user: {
+          id: payload.sub,
+          email: payload.email,
+          name: payload.name,
+          preferred_username: payload.preferred_username,
+        },
+        isAuthenticated: true
+      };
+    } catch (error) {
+      throw new BadRequestException('Invalid access token');
+    }
+  }
+
+  // GET /auth/token-info - Get token info from cookies (for testing)
+  @Public()
+  @Get('token-info')
+  async getTokenInfo(@Req() req: Request) {
+    const accessToken = req.cookies?.access_token;
+    const refreshToken = req.cookies?.refresh_token;
+    
+    if (!accessToken) {
+      return {
+        message: 'No tokens found in cookies',
+        hasAccessToken: false,
+        hasRefreshToken: false,
+        instruction: 'Login first via /auth/prime/login'
+      };
+    }
+
+    try {
+      // Decode JWT to get info
+      const jwt = require('jsonwebtoken');
+      const payload = jwt.decode(accessToken);
+      
+      return {
+        message: 'Tokens found in cookies',
+        hasAccessToken: true,
+        hasRefreshToken: !!refreshToken,
+        access_token: accessToken,
+        refresh_token: refreshToken,
+        token_payload: payload,
+        bearer_header: `Bearer ${accessToken}`,
+        note: 'Copy the access_token or bearer_header to use in Postman Authorization header'
+      };
+    } catch (error) {
+      return {
+        message: 'Invalid token in cookies',
+        hasAccessToken: true,
+        hasRefreshToken: !!refreshToken,
+        error: error.message,
+        instruction: 'Login again via /auth/prime/login'
+      };
+    }
   }
 
   // POST /auth/debug-token (untuk testing)
