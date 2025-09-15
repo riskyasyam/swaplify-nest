@@ -23,6 +23,13 @@ export class UserController {
     return this.userService.getAllUser();
   }
 
+  // GET /user/subscriptions - Get all users with their subscription details (for admin table)
+  @Roles('ADMIN')
+  @Get('subscriptions')
+  async getAllUsersWithSubscriptions() {
+    return this.userService.getAllUsersWithSubscriptions();
+  }
+
   @Roles('ADMIN')
   @Delete(':id')
   async deleteUser(@Param('id') id: string) {

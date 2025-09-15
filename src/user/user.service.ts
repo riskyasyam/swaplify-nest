@@ -85,6 +85,77 @@ export class UserService {
     });
   }
 
+  /**
+   * Get all users with their subscription details (for admin subscription management)
+   */
+  async getAllUsersWithSubscriptions() {
+    const users = await this.prisma.user.findMany({
+      include: {
+        subscriptions: {
+          where: { status: 'ACTIVE', currentEnd: null },
+          include: {
+            plan: {
+              include: {
+                entitlements: {
+                  orderBy: { version: 'desc' },
+                  take: 1
+                }
+              }
+            }
+          }
+        }
+      },
+      orderBy: { createdAt: 'desc' }
+    });
+
+    // Transform data untuk frontend table
+    return users.map(user => {
+      const activeSubscription = user.subscriptions[0] || null;
+      
+      return {
+        id: user.id,
+        email: user.email,
+        displayName: user.displayName,
+        role: user.role,
+        createdAt: user.createdAt,
+        subscription: activeSubscription ? {
+          id: activeSubscription.id,
+          planCode: activeSubscription.plan.code,
+          planName: activeSubscription.plan.name,
+          planPriority: activeSubscription.plan.priority,
+          status: activeSubscription.status,
+          currentStart: activeSubscription.currentStart,
+          billingRef: activeSubscription.billingRef,
+          entitlements: activeSubscription.plan.entitlements[0]?.entitlements || null,
+          // Monthly usage info dengan type safety
+          planLimits: (() => {
+            const entitlements = activeSubscription.plan.entitlements[0]?.entitlements as any;
+            return {
+              monthlyJobs: entitlements?.monthlyJobs || 0,
+              storageGB: entitlements?.storageGB || 0,
+              concurrentJobs: entitlements?.concurrentJobs || 1
+            };
+          })()
+        } : {
+          // User tanpa subscription aktif
+          id: null,
+          planCode: 'FREE',
+          planName: 'Free Plan',
+          planPriority: 0,
+          status: 'INACTIVE',
+          currentStart: null,
+          billingRef: null,
+          entitlements: null,
+          planLimits: {
+            monthlyJobs: 0,
+            storageGB: 0,
+            concurrentJobs: 0
+          }
+        }
+      };
+    });
+  }
+
   async deleteUser(id: string) {
     return this.prisma.user.delete({ where: { id } });
   }
