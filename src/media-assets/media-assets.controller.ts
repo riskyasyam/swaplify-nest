@@ -1,6 +1,6 @@
 import {
   Controller, Post, UseInterceptors, UploadedFile, Body,
-  BadRequestException, Req, UseGuards, Get, Param, Query,
+  BadRequestException, Req, UseGuards, Get, Param, Query, Delete,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import type { Express } from 'express';
@@ -77,5 +77,18 @@ export class MediaAssetsController {
       skip: skipNum,
       take: takeNum,
     });
+  }
+
+  // DELETE /media-assets/output/:id - Delete FaceFusion output by user
+  @UseGuards(PrimeAuthIntrospectionGuard)
+  @Delete('output/:id')
+  async deleteFaceFusionOutput(
+    @Param('id') assetId: string,
+    @Req() req: any,
+  ) {
+    const userId: string | undefined = req.user?.id;
+    if (!userId) throw new BadRequestException('Invalid user in token');
+
+    return this.svc.deleteFaceFusionOutputByUser(userId, assetId);
   }
 }

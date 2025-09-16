@@ -1,5 +1,5 @@
 // src/user/user.controller.ts
-import { Controller, Get, Delete, Param, UseGuards, Put, Body, Patch } from '@nestjs/common';
+import { Controller, Get, Delete, Param, UseGuards, Put, Body, Patch, Req, BadRequestException } from '@nestjs/common';
 import { UserService } from './user.service';
 import { Roles } from 'src/common/decorators/roles.decorator';
 import { AuthGuard } from '@nestjs/passport';
@@ -32,6 +32,7 @@ export class UserController {
 
   @Roles('ADMIN')
   @Delete(':id')
+
   async deleteUser(@Param('id') id: string) {
     const deletedUser = await this.userService.deleteUser(id);
     return {
@@ -75,6 +76,28 @@ export class UserController {
   @Get(':id/details')
   async getUserDetails(@Param('id') userId: string) {
     return this.userService.getUserWithSubscription(userId);
+  }
+
+  // ============= CURRENT USER ENDPOINTS (Bearer Token) =============
+
+  // GET /user/me - Get current user profile (display name, role)
+  @UseGuards(PrimeAuthIntrospectionGuard)
+  @Get('me')
+  async getCurrentUserProfile(@Req() req: any) {
+    const userId: string | undefined = req.user?.id;
+    if (!userId) throw new BadRequestException('Invalid user in token');
+
+    return this.userService.getCurrentUserProfile(userId);
+  }
+
+  // GET /user/me/subscription - Get current user's subscription and entitlements
+  @UseGuards(PrimeAuthIntrospectionGuard)
+  @Get('me/subscription')
+  async getCurrentUserSubscription(@Req() req: any) {
+    const userId: string | undefined = req.user?.id;
+    if (!userId) throw new BadRequestException('Invalid user in token');
+
+    return this.userService.getCurrentUserSubscription(userId);
   }
 
   @Get('plans/available')

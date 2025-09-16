@@ -1,7 +1,7 @@
 import { Injectable, Inject, BadRequestException } from '@nestjs/common';
 import type { Express } from 'express';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { PutObjectCommand, DeleteObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { createHash } from 'crypto';
 import sharp from 'sharp';
 import { MediaType } from '@prisma/client';
@@ -222,6 +222,92 @@ export class MediaAssetsService {
         hasMore: skip + take < total
       }
     };
+  }
+
+  /**
+   * Delete FaceFusion output media asset by user (only if owned by user)
+   */
+  async deleteFaceFusionOutputByUser(userId: string, assetId: string) {
+    // First, verify the asset exists and belongs to the user
+    const asset = await this.prisma.mediaAsset.findFirst({
+      where: {
+        id: assetId,
+        userId,
+        // Ensure it's a FaceFusion output
+        outputForJobs: {
+          some: {}
+        },
+        bucket: 'facefusion-output'
+      },
+      include: {
+        outputForJobs: {
+          select: {
+            id: true,
+            status: true
+          }
+        }
+      }
+    });
+
+    if (!asset) {
+      throw new BadRequestException('Asset not found or you do not have permission to delete it');
+    }
+
+    try {
+      // Delete from S3/MinIO storage
+      if (asset.bucket && asset.objectKey) {
+        await this.s3.send(
+          new DeleteObjectCommand({
+            Bucket: asset.bucket,
+            Key: asset.objectKey
+          })
+        );
+      }
+
+      // Delete from database
+      await this.prisma.mediaAsset.delete({
+        where: { id: assetId }
+      });
+
+      return {
+        message: 'FaceFusion output deleted successfully',
+        deletedAsset: {
+          id: asset.id,
+          objectKey: asset.objectKey,
+          type: asset.type,
+          mimeType: asset.mimeType,
+          sizeBytes: asset.sizeBytes ? asset.sizeBytes.toString() : null,
+          createdAt: asset.createdAt,
+          relatedJobs: asset.outputForJobs.map(job => ({
+            id: job.id,
+            status: job.status
+          }))
+        }
+      };
+    } catch (error) {
+      // If S3 deletion fails but DB deletion succeeds, log it but don't fail the request
+      if (error.code === 'NoSuchKey') {
+        // File already doesn't exist in S3, just delete from DB
+        await this.prisma.mediaAsset.delete({
+          where: { id: assetId }
+        });
+        
+        return {
+          message: 'FaceFusion output deleted successfully (file was already missing from storage)',
+          deletedAsset: {
+            id: asset.id,
+            objectKey: asset.objectKey,
+            type: asset.type,
+            mimeType: asset.mimeType,
+            sizeBytes: asset.sizeBytes ? asset.sizeBytes.toString() : null,
+            createdAt: asset.createdAt,
+            warning: 'File was not found in storage but removed from database'
+          }
+        };
+      }
+      
+      throw new BadRequestException(`Failed to delete asset: ${error.message}`);
+    }
   }
 }
 

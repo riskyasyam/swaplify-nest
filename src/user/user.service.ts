@@ -323,4 +323,137 @@ export class UserService {
       orderBy: { priority: 'asc' }
     });
   }
+
+  /**
+   * Get current user profile (display name, role) - for bearer token endpoints
+   */
+  async getCurrentUserProfile(userId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        email: true,
+        displayName: true,
+        role: true,
+        createdAt: true
+      }
+    });
+
+    if (!user) throw new NotFoundException('User not found');
+
+    return {
+      id: user.id,
+      email: user.email,
+      displayName: user.displayName,
+      role: user.role,
+      createdAt: user.createdAt
+    };
+  }
+
+  /**
+   * Get current user's subscription and entitlements - for bearer token endpoints
+   */
+  async getCurrentUserSubscription(userId: string) {
+    // Get user basic info
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        email: true,
+        displayName: true
+      }
+    });
+
+    if (!user) throw new NotFoundException('User not found');
+
+    // Get active subscription with plan and entitlements
+    const subscription = await this.prisma.subscription.findFirst({
+      where: { 
+        userId, 
+        status: 'ACTIVE', 
+        currentEnd: null 
+      },
+      orderBy: { currentStart: 'desc' },
+      include: {
+        plan: {
+          include: {
+            entitlements: {
+              orderBy: { version: 'desc' },
+              take: 1
+            }
+          }
+        }
+      }
+    });
+
+    // Get usage for current month
+    const { start, end } = monthRange();
+    const usage = await this.prisma.usageCounter.findUnique({
+      where: {
+        userId_periodStart_periodEnd: {
+          userId,
+          periodStart: start,
+          periodEnd: end,
+        },
+      },
+      select: { jobsTotal: true }
+    });
+
+    const result = {
+      user: {
+        id: user.id,
+        email: user.email,
+        displayName: user.displayName
+      },
+      subscription: subscription ? {
+        id: subscription.id,
+        planCode: subscription.plan.code,
+        planName: subscription.plan.name,
+        planPriority: subscription.plan.priority,
+        status: subscription.status,
+        currentStart: subscription.currentStart,
+        currentEnd: subscription.currentEnd,
+        billingRef: subscription.billingRef,
+        entitlements: subscription.plan.entitlements[0]?.entitlements || null,
+        // Extract key entitlements for easy access
+        planLimits: (() => {
+          const entitlements = subscription.plan.entitlements[0]?.entitlements as any;
+          return {
+            monthlyJobs: entitlements?.monthlyJobs || 0,
+            storageGB: entitlements?.storageGB || 0,
+            concurrentJobs: entitlements?.concurrentJobs || 1,
+            features: entitlements?.features || []
+          };
+        })()
+      } : {
+        // User without active subscription
+        id: null,
+        planCode: 'FREE',
+        planName: 'Free Plan',
+        planPriority: 0,
+        status: 'INACTIVE',
+        currentStart: null,
+        currentEnd: null,
+        billingRef: null,
+        entitlements: null,
+        planLimits: {
+          monthlyJobs: 0,
+          storageGB: 0,
+          concurrentJobs: 0,
+          features: []
+        }
+      },
+      usage: {
+        currentMonth: {
+          jobsUsed: usage?.jobsTotal || 0,
+          period: {
+            start: start.toISOString(),
+            end: end.toISOString()
+          }
+        }
+      }
+    };
+
+    return result;
+  }
 }
