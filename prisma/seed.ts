@@ -65,68 +65,147 @@ async function main() {
   type FeatureSeed = {
     name: string;
     value?: string;
-    type: 'processor' | 'feature';
+    type: 'processor' | 'processor_option' | 'feature';
     status: 'ACTIVE' | 'INACTIVE';
     weight?: number;
+    category?: string;
   };
 
   // Core processors
   const CORE_PROCESSORS: FeatureSeed[] = [
-    { name: 'frame_enhancer',      type: 'processor', status: 'INACTIVE', weight: 5 },
-    { name: 'deep_swapper',        type: 'processor', status: 'INACTIVE', weight: 4 },
-    { name: 'lip_syncer',          type: 'processor', status: 'INACTIVE', weight: 3 },
-    { name: 'face_swapper',        type: 'processor', status: 'ACTIVE',   weight: 3 },
-    { name: 'face_enhancer',       type: 'processor', status: 'INACTIVE', weight: 2 },
-    { name: 'expression_restorer', type: 'processor', status: 'INACTIVE', weight: 2 },
-    { name: 'frame_colorizer',     type: 'processor', status: 'INACTIVE', weight: 2 },
-    { name: 'face_editor',         type: 'processor', status: 'INACTIVE', weight: 2 },
-    { name: 'face_debugger',       type: 'processor', status: 'INACTIVE', weight: 1 },
+    { name: 'frame_enhancer',      type: 'processor', status: 'ACTIVE', weight: 5 },
+    { name: 'deep_swapper',        type: 'processor', status: 'ACTIVE', weight: 4 },
+    { name: 'lip_syncer',          type: 'processor', status: 'ACTIVE', weight: 3 },
+    { name: 'face_swapper',        type: 'processor', status: 'ACTIVE', weight: 3 },
+    { name: 'face_enhancer',       type: 'processor', status: 'ACTIVE', weight: 2 },
+    { name: 'expression_restorer', type: 'processor', status: 'ACTIVE', weight: 2 },
+    { name: 'frame_colorizer',     type: 'processor', status: 'ACTIVE', weight: 2 },
+    { name: 'face_editor',         type: 'processor', status: 'ACTIVE', weight: 2 },
+    { name: 'face_debugger',       type: 'processor', status: 'ACTIVE', weight: 1 },
+    { name: 'age_modifier',        type: 'processor', status: 'ACTIVE', weight: 1 },
   ];
 
-  // Parameter/fitur tambahan → weight 0
-  const PARAM_FEATURES: FeatureSeed[] = [
-    { name: 'face_enhancer_model', type: 'processor', status: 'INACTIVE', weight: 0 },
-    { name: 'face_enhancer_blend', type: 'processor', status: 'INACTIVE', weight: 0 },
-    { name: 'frame_enhancer_model', type: 'processor', status: 'INACTIVE', weight: 0 },
-    { name: 'frame_enhancer_blend', type: 'processor', status: 'INACTIVE', weight: 0 },
-    { name: 'expression_restorer_model', type: 'processor', status: 'INACTIVE', weight: 0 },
-    { name: 'expression_restorer_factor', type: 'processor', status: 'INACTIVE', weight: 0 },
-    { name: 'lip_syncer_model', type: 'processor', status: 'INACTIVE', weight: 0 },
-    { name: 'lip_syncer_weight', type: 'processor', status: 'INACTIVE', weight: 0 },
-    { name: 'deep_swapper_model', type: 'processor', status: 'INACTIVE', weight: 0 },
-    { name: 'deep_swapper_morph', type: 'processor', status: 'INACTIVE', weight: 0 },
-    { name: 'frame_colorizer_model', type: 'processor', status: 'INACTIVE', weight: 0 },
-    { name: 'frame_colorizer_blend', type: 'processor', status: 'INACTIVE', weight: 0 },
-    { name: 'face_editor_model', type: 'processor', status: 'INACTIVE', weight: 0 },
-    { name: 'face_editor_*', type: 'processor', status: 'INACTIVE', weight: 0 }, // catch all editor params
-    { name: 'face_debugger_items', type: 'processor', status: 'INACTIVE', weight: 0 },
-  ];
+  // Processor options/parameters → weight 0
+  // Organized by categories for frontend dropdown usage
+  const modelCategories = {
+    face_swapper_model: [
+      'blendswap_256',
+      'inswapper_128', 
+      'inswapper_128_fp16',
+      'simswap_256',
+      'simswap_512',
+      'uniface_256'
+    ],
+    face_enhancer_model: [
+      'codeformer',
+      'gfpgan_1_2',
+      'gfpgan_1_3', 
+      'gfpgan_1_4',
+      'gpen_bfr_256',
+      'gpen_bfr_512',
+      'gpen_bfr_1024',
+      'gpen_bfr_2048',
+      'restoreformer_plus_plus'
+    ],
+    frame_enhancer_model: [
+      'real_esrgan_x2plus',
+      'real_esrgan_x4plus',
+      'real_esrgan_x4plus_anime_6b',
+      'real_hatgan_x4'
+    ],
+    face_detector_model: [
+      'retinaface',
+      'yoloface', 
+      'mtcnn'
+    ],
+    frame_colorizer_model: [
+      'deoldify',
+      'instacolor'
+    ],
+    lip_syncer_model: [
+      'wav2lip',
+      'wav2lip_gan'
+    ],
+    deep_swapper_model: [
+      'deepface_lab',
+      'simswap_512'
+    ],
+    face_editor_model: [
+      'live_portrait',
+      'stylegan_edit'
+    ],
+    expression_restorer_model: [
+      'live_portrait'
+    ],
+    age_modifier_model: [
+      'aginggan'
+    ],
+    face_classifier_model: [
+      'genderage',
+      'arcface'
+    ],
+    face_landmarker_model: [
+      'face_alignment',
+      'mediapipe'
+    ]
+  };
 
-  // Non-processor features
+  // Convert categories to processor options array
+  const PROCESSOR_OPTIONS: FeatureSeed[] = [];
+  
+  // Generate model options from categories
+  Object.entries(modelCategories).forEach(([category, values]) => {
+    values.forEach(value => {
+      PROCESSOR_OPTIONS.push({
+        name: `${category}_${value}`,
+        type: 'processor_option',
+        status: 'ACTIVE',
+        weight: 0,
+        value: value,
+        category: category
+      });
+    });
+  });
+
+  // Add processor option parameters (non-model options)
+  PROCESSOR_OPTIONS.push(
+    { name: 'face_enhancer_blend', type: 'processor_option', status: 'ACTIVE', weight: 0 },
+    { name: 'frame_enhancer_blend', type: 'processor_option', status: 'ACTIVE', weight: 0 },
+    { name: 'expression_restorer_factor', type: 'processor_option', status: 'ACTIVE', weight: 0 },
+    { name: 'lip_syncer_weight', type: 'processor_option', status: 'ACTIVE', weight: 0 },
+    { name: 'deep_swapper_morph', type: 'processor_option', status: 'ACTIVE', weight: 0 },
+    { name: 'frame_colorizer_blend', type: 'processor_option', status: 'ACTIVE', weight: 0 },
+    { name: 'face_editor_params', type: 'processor_option', status: 'ACTIVE', weight: 0 },
+    { name: 'face_debugger_items', type: 'processor_option', status: 'ACTIVE', weight: 0 },
+    { name: 'face_swapper_pixel_boost', type: 'processor_option', status: 'ACTIVE', weight: 0 },
+    { name: 'age_modifier_direction', type: 'processor_option', status: 'ACTIVE', weight: 0 }
+  );
+
+  // Non-processor features (global options)
   const NON_PROCESSORS: FeatureSeed[] = [
-    { name: 'face_detector_model', type: 'feature', status: 'INACTIVE', weight: 2 },
-    { name: 'face_detector_score', type: 'feature', status: 'INACTIVE', weight: 1 },
-    { name: 'face_selector_mode', type: 'feature', status: 'INACTIVE', weight: 1 },
-    { name: 'face_selector_order', type: 'feature', status: 'INACTIVE', weight: 1 },
-    { name: 'face_selector_gender', type: 'feature', status: 'INACTIVE', weight: 1 },
-    { name: 'face_selector_age_start', type: 'feature', status: 'INACTIVE', weight: 1 },
-    { name: 'face_selector_age_end', type: 'feature', status: 'INACTIVE', weight: 1 },
+    { name: 'face_detector_model', type: 'feature', status: 'ACTIVE', weight: 2 },
+    { name: 'face_detector_score', type: 'feature', status: 'ACTIVE', weight: 1 },
+    { name: 'face_selector_mode', type: 'feature', status: 'ACTIVE', weight: 1 },
+    { name: 'face_selector_order', type: 'feature', status: 'ACTIVE', weight: 1 },
+    { name: 'face_selector_gender', type: 'feature', status: 'ACTIVE', weight: 1 },
+    { name: 'face_selector_age_start', type: 'feature', status: 'ACTIVE', weight: 1 },
+    { name: 'face_selector_age_end', type: 'feature', status: 'ACTIVE', weight: 1 },
     { name: 'reference_face_distance', type: 'feature', status: 'ACTIVE', weight: 1 },
-    { name: 'face_mask_types', type: 'feature', status: 'INACTIVE', weight: 1 },
+    { name: 'face_mask_types', type: 'feature', status: 'ACTIVE', weight: 1 },
     { name: 'face_mask_blur', type: 'feature', status: 'ACTIVE', weight: 1 },
-    { name: 'face_mask_padding', type: 'feature', status: 'INACTIVE', weight: 1 },
-    { name: 'face_swapper_model', type: 'feature', status: 'INACTIVE', weight: 1 },
-    { name: 'face_swapper_pixel_boost', type: 'feature', status: 'INACTIVE', weight: 1 },
+    { name: 'face_mask_padding', type: 'feature', status: 'ACTIVE', weight: 1 },
     { name: 'output_video_quality', type: 'feature', status: 'ACTIVE', weight: 1 },
-    { name: 'output_video_resolution', type: 'feature', status: 'INACTIVE', weight: 1 },
-    { name: 'output_video_fps', type: 'feature', status: 'INACTIVE', weight: 1 },
+    { name: 'output_video_resolution', type: 'feature', status: 'ACTIVE', weight: 1 },
+    { name: 'output_video_fps', type: 'feature', status: 'ACTIVE', weight: 1 },
     { name: 'output_video_encoder', type: 'feature', status: 'ACTIVE', weight: 0 },
     { name: 'output_video_preset', type: 'feature', status: 'ACTIVE', weight: 0 },
+    { name: 'use_cuda', type: 'feature', status: 'ACTIVE', weight: 0 },
+    { name: 'device_id', type: 'feature', status: 'ACTIVE', weight: 0 },
   ];
 
   const ALL_FEATURES: FeatureSeed[] = [
     ...CORE_PROCESSORS,
-    ...PARAM_FEATURES,
+    ...PROCESSOR_OPTIONS,
     ...NON_PROCESSORS,
   ];
 

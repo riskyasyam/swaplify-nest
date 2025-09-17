@@ -7,14 +7,22 @@ export class FeaturesService {
   constructor(private prisma: PrismaService) {}
 
   // CREATE (value selalu string; default-kan ke '' bila undefined)
-  create(data: { name: string; value?: string; type: FeatureType; status: FeatureStatus; weight: number }) {
+  create(data: { 
+    name: string; 
+    value?: string; 
+    type: FeatureType; 
+    status: FeatureStatus; 
+    weight: number;
+    category?: string;
+  }) {
     return this.prisma.feature.create({
       data: {
         name: data.name,
         value: data.value ?? '',     // ← Opsi A: fallback ke string kosong
         type: data.type,
         status: data.status,
-        weight: data.weight
+        weight: data.weight,
+        category: data.category
       },
     });
   }
@@ -76,6 +84,7 @@ export class FeaturesService {
       type?: FeatureType;
       status?: FeatureStatus;
       weight?: number;
+      category?: string;
     },
   ) {
     return this.prisma.feature.update({
@@ -95,5 +104,67 @@ export class FeaturesService {
     return this.prisma.feature.findMany({
       orderBy: { createdAt: 'desc' },
     });
+  }
+
+  // Get only core processors (main processors like face_swapper, face_enhancer)
+  async findProcessors() {
+    return this.prisma.feature.findMany({
+      where: { type: 'processor' },
+      orderBy: { weight: 'desc' }, // heaviest first
+    });
+  }
+
+  // Get only processor options (models, blend values, etc.)
+  async findProcessorOptions() {
+    return this.prisma.feature.findMany({
+      where: { type: 'processor_option' },
+      orderBy: { name: 'asc' },
+    });
+  }
+
+  // Get processor options by category (for frontend dropdowns)
+  async findProcessorOptionsByCategory(category: string) {
+    return this.prisma.feature.findMany({
+      where: { 
+        type: 'processor_option',
+        category: category
+      },
+      orderBy: { value: 'asc' },
+    });
+  }
+
+  // Get all available model categories
+  async findModelCategories() {
+    const result = await this.prisma.feature.findMany({
+      where: { 
+        type: 'processor_option',
+        category: { not: null }
+      },
+      select: { category: true },
+      distinct: ['category'],
+    });
+    
+    return result.map(item => item.category).filter(Boolean);
+  }
+
+  // Get only general features (non-processor related)
+  async findGeneralFeatures() {
+    return this.prisma.feature.findMany({
+      where: { type: 'feature' },
+      orderBy: { name: 'asc' },
+    });
+  }
+
+  // Get processors with their related options
+  async findProcessorsWithOptions() {
+    const processors = await this.findProcessors();
+    const options = await this.findProcessorOptions();
+    
+    return processors.map(processor => ({
+      ...processor,
+      options: options.filter(option => 
+        option.name.startsWith(processor.name.replace('_', ''))
+      )
+    }));
   }
 }

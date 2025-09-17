@@ -51,6 +51,7 @@ enum PaymentStatus {
 
 enum FeatureType {
   processor
+  processor_option
   feature
 }
 
@@ -271,6 +272,7 @@ model Feature {
   type      FeatureType
   status    FeatureStatus
   weight    Int           @default(1)
+  category  String?
   createdAt DateTime      @default(now()) @map("created_at")
 
   plans FeaturePlan[]

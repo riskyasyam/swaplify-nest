@@ -8,12 +8,15 @@ export class UpdateFeatureDto {
   @IsString() @IsOptional()
   value?: string;
 
-  @IsEnum(FeatureType)
-  type!: FeatureType;
+  @IsEnum(FeatureType) @IsOptional()
+  type?: FeatureType;
 
   @IsEnum(FeatureStatus) @IsOptional()
   status?: FeatureStatus;
 
   @IsInt() @IsOptional()
-    weight!: number;
+  weight?: number;
+
+  @IsString() @IsOptional()
+  category?: string;            // for grouping processor options
 }

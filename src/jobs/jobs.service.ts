@@ -47,16 +47,209 @@ export class JobsService {
     return width <= limit.maxWidth && height <= limit.maxHeight;
   }
 
-  // Hitung weight dari processors
+  // Hitung weight dari processors (hanya core processors, bukan options)
   private async calculateWeight(processors: string[]) {
     const features = await this.prisma.feature.findMany({
-      where: { name: { in: processors } },
+      where: { 
+        name: { in: processors },
+        type: 'processor' // Only core processors, not processor_option
+      },
     });
     return features.reduce((sum, f) => sum + (f.weight ?? 1), 0);
   }
 
+  /**
+   * Validate processor dependencies and options
+   */
+  private validateProcessorOptions(processors: string[], options: any = {}): string[] {
+    const errors: string[] = [];
+
+    // Required model validations
+    const requiredModels = {
+      'face_enhancer': 'faceEnhancerModel',
+      'frame_enhancer': 'frameEnhancerModel', 
+      'frame_colorizer': 'frameColorizerModel',
+      'lip_syncer': 'lipSyncerModel',
+      'deep_swapper': 'deepSwapperModel'
+    };
+
+    for (const [processor, modelField] of Object.entries(requiredModels)) {
+      if (processors.includes(processor) && !options[modelField]) {
+        errors.push(`${modelField} is required when using ${processor} processor`);
+      }
+    }
+
+    // Face Editor validation
+    if (processors.includes('face_editor') && options.faceEditorParams) {
+      const params = options.faceEditorParams;
+      
+      if (params.eyeOpenRatio !== undefined && (params.eyeOpenRatio < 0 || params.eyeOpenRatio > 2)) {
+        errors.push('faceEditorParams.eyeOpenRatio must be between 0 and 2');
+      }
+      
+      if (params.mouthSmile !== undefined && (params.mouthSmile < -1 || params.mouthSmile > 1)) {
+        errors.push('faceEditorParams.mouthSmile must be between -1 and 1');
+      }
+      
+      if (params.headYaw !== undefined && (params.headYaw < -30 || params.headYaw > 30)) {
+        errors.push('faceEditorParams.headYaw must be between -30 and 30 degrees');
+      }
+
+      if (params.headPitch !== undefined && (params.headPitch < -30 || params.headPitch > 30)) {
+        errors.push('faceEditorParams.headPitch must be between -30 and 30 degrees');
+      }
+
+      if (params.headRoll !== undefined && (params.headRoll < -30 || params.headRoll > 30)) {
+        errors.push('faceEditorParams.headRoll must be between -30 and 30 degrees');
+      }
+    }
+
+    // Age modifier validation
+    if (processors.includes('age_modifier') && options.ageModifierDirection !== undefined) {
+      if (options.ageModifierDirection < -20 || options.ageModifierDirection > 20) {
+        errors.push('ageModifierDirection must be between -20 and 20');
+      }
+    }
+
+    // Face selector validation
+    if (options.faceSelectorMode === 'reference' && !options.referenceFaceDistance) {
+      errors.push('referenceFaceDistance is required when faceSelectorMode is "reference"');
+    }
+
+    // Age range validation
+    if (options.faceSelectorAgeStart !== undefined && options.faceSelectorAgeEnd !== undefined) {
+      if (options.faceSelectorAgeStart > options.faceSelectorAgeEnd) {
+        errors.push('faceSelectorAgeStart must be less than faceSelectorAgeEnd');
+      }
+    }
+
+    // Output quality validation
+    if (options.outputVideoQuality !== undefined && (options.outputVideoQuality < 10 || options.outputVideoQuality > 100)) {
+      errors.push('outputVideoQuality must be between 10 and 100');
+    }
+
+    // Face detector score validation
+    if (options.faceDetectorScore !== undefined && (options.faceDetectorScore < 0 || options.faceDetectorScore > 1)) {
+      errors.push('faceDetectorScore must be between 0 and 1');
+    }
+
+    // Face enhancer blend validation
+    if (options.faceEnhancerBlend !== undefined && (options.faceEnhancerBlend < 0 || options.faceEnhancerBlend > 100)) {
+      errors.push('faceEnhancerBlend must be between 0 and 100');
+    }
+
+    // Frame enhancer blend validation
+    if (options.frameEnhancerBlend !== undefined && (options.frameEnhancerBlend < 0 || options.frameEnhancerBlend > 100)) {
+      errors.push('frameEnhancerBlend must be between 0 and 100');
+    }
+
+    return errors;
+  }
+
+  /**
+   * Apply default values for missing options
+   */
+  private applyDefaultOptions(processors: string[], options: any = {}): any {
+    const defaults = {
+      // Hardware defaults
+      useCuda: true,
+      deviceId: '0',
+      
+      // Processor defaults
+      faceSwapperModel: 'inswapper_128',
+      faceEnhancerBlend: 50,
+      frameEnhancerBlend: 80,
+      ageModifierDirection: 0,
+      expressionRestorerModel: 'live_portrait',
+      expressionRestorerFactor: 80,
+      faceEditorModel: 'live_portrait',
+      frameColorizerBlend: 80,
+      lipSyncerWeight: 1.0,
+      deepSwapperMorph: 80,
+      
+      // Global defaults
+      faceSelectorMode: 'automatic',
+      referenceFaceDistance: 0.3,
+      faceSelectorOrder: 'left-right',
+      faceSelectorGender: 'any',
+      faceSelectorAgeStart: 0,
+      faceSelectorAgeEnd: 100,
+      faceDetectorModel: 'retinaface',
+      faceDetectorScore: 0.5,
+      faceMaskTypes: 'box',
+      faceMaskBlur: 0.3,
+      faceMaskPadding: '0,0,0,0',
+      outputVideoEncoder: 'libx264',
+      outputVideoQuality: 80,
+      outputVideoPreset: 'medium',
+      outputVideoFps: 25
+    };
+
+    // Start with provided options
+    const result = { ...options };
+    
+    // Only apply processor-specific defaults for selected processors
+    if (processors.includes('face_swapper') && !result.faceSwapperModel) {
+      result.faceSwapperModel = defaults.faceSwapperModel;
+    }
+    
+    if (processors.includes('face_enhancer') && result.faceEnhancerBlend === undefined) {
+      result.faceEnhancerBlend = defaults.faceEnhancerBlend;
+    }
+    
+    if (processors.includes('frame_enhancer') && result.frameEnhancerBlend === undefined) {
+      result.frameEnhancerBlend = defaults.frameEnhancerBlend;
+    }
+
+    if (processors.includes('age_modifier') && result.ageModifierDirection === undefined) {
+      result.ageModifierDirection = defaults.ageModifierDirection;
+    }
+
+    if (processors.includes('expression_restorer')) {
+      if (!result.expressionRestorerModel) result.expressionRestorerModel = defaults.expressionRestorerModel;
+      if (result.expressionRestorerFactor === undefined) result.expressionRestorerFactor = defaults.expressionRestorerFactor;
+    }
+
+    if (processors.includes('face_editor') && !result.faceEditorModel) {
+      result.faceEditorModel = defaults.faceEditorModel;
+    }
+
+    if (processors.includes('frame_colorizer') && result.frameColorizerBlend === undefined) {
+      result.frameColorizerBlend = defaults.frameColorizerBlend;
+    }
+
+    if (processors.includes('lip_syncer') && result.lipSyncerWeight === undefined) {
+      result.lipSyncerWeight = defaults.lipSyncerWeight;
+    }
+
+    if (processors.includes('deep_swapper') && result.deepSwapperMorph === undefined) {
+      result.deepSwapperMorph = defaults.deepSwapperMorph;
+    }
+    
+    // Apply global defaults for undefined values
+    Object.keys(defaults).forEach(key => {
+      if (result[key] === undefined && !key.includes('Model') && !key.includes('Direction') && !key.includes('Factor') && !key.includes('Blend') && !key.includes('Weight') && !key.includes('Morph')) {
+        result[key] = defaults[key];
+      }
+    });
+
+    return result;
+  }
+
   async create(input: CreateJobInput) {
     const { userId, sourceAssetId, targetAssetId, audioAssetId, processors, options } = input;
+
+    // 0. Validate processor options
+    const validationErrors = this.validateProcessorOptions(processors, options);
+    if (validationErrors.length > 0) {
+      throw new BadRequestException({
+        message: 'Invalid processor options',
+        errors: validationErrors
+      });
+    }
+
+    // 0.1. Apply default values
+    const finalOptions = this.applyDefaultOptions(processors, options);
 
     // 1. Ambil subscription aktif
     const subscription = await this.prisma.subscription.findFirst({
@@ -135,7 +328,7 @@ export class JobsService {
         targetAssetId,
         audioAssetId,
         processors,
-        options,
+        options: finalOptions, // Use processed options with defaults
         weightUsed: jobWeight,
         status: JobStatus.QUEUED,
       },
@@ -161,7 +354,7 @@ export class JobsService {
         targetAssetId: job.targetAssetId,
         audioAssetId: job.audioAssetId,
         processors: job.processors,
-        options: job.options,
+        options: job.options, // This now contains the processed options
       });
       console.log(`✅ Published job ${job.id} to NSQ topic '${nsqTopic}'`);
     } catch (err) {

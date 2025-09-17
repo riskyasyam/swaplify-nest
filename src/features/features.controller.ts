@@ -59,4 +59,46 @@ export class FeaturesController {
     return this.svc.remove(id);
   }
 
+  // Get only core processors
+  @Public()
+  @Get('processors/core')
+  findProcessors() {
+    return this.svc.findProcessors();
+  }
+
+  // Get only processor options  
+  @Public()
+  @Get('processors/options')
+  findProcessorOptions() {
+    return this.svc.findProcessorOptions();
+  }
+
+  // Get only general features
+  @Public()
+  @Get('general/features')
+  findGeneralFeatures() {
+    return this.svc.findGeneralFeatures();
+  }
+
+  // Get processors with their related options
+  @Public()
+  @Get('processors/with-options')
+  findProcessorsWithOptions() {
+    return this.svc.findProcessorsWithOptions();
+  }
+
+  // Get processor options by category (for frontend dropdowns)
+  @Public()
+  @Get('processor-options/category/:category')
+  findProcessorOptionsByCategory(@Param('category') category: string) {
+    return this.svc.findProcessorOptionsByCategory(category);
+  }
+
+  // Get all available model categories
+  @Public()
+  @Get('model-categories')
+  findModelCategories() {
+    return this.svc.findModelCategories();
+  }
+
 }

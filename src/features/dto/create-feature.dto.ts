@@ -9,11 +9,14 @@ export class CreateFeatureDto {
   value?: string;               // bebas: default/model/etc.
 
   @IsEnum(FeatureType)
-  type!: FeatureType;           // 'processor' | 'feature'
+  type!: FeatureType;           // 'processor' | 'processor_option' | 'feature'
 
   @IsEnum(FeatureStatus)
   status!: FeatureStatus;       // 'ACTIVE' | 'INACTIVE'
 
   @IsInt() @IsNotEmpty()
   weight!: number;
+
+  @IsString() @IsOptional()
+  category?: string;            // for grouping processor options
 }

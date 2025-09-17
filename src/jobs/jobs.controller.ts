@@ -26,6 +26,264 @@ export class JobsController {
     return this.jobs.findAll(req.user.id);
   }
 
+  // GET /jobs/capabilities - Get available processors and options
+  @Get('capabilities')
+  async getCapabilities() {
+    return {
+      processors: {
+        face_swapper: {
+          name: 'Face Swap',
+          category: 'core',
+          description: 'Swap faces between source and target',
+          requiresModel: false,
+          defaultModel: 'inswapper_128',
+          models: ['inswapper_128', 'inswapper_128_fp16', 'simswap_256', 'simswap_512_unofficial'],
+          options: {
+            faceSwapperPixelBoost: {
+              type: 'select',
+              options: ['1x', '2x', '4x'],
+              default: '1x'
+            }
+          }
+        },
+        face_enhancer: {
+          name: 'Face Enhancement',
+          category: 'enhancement',
+          description: 'Improve face quality and clarity',
+          requiresModel: true,
+          models: ['gfpgan_1.4', 'gfpgan_1.3', 'gfpgan_1.2', 'codeformer', 'restoreformer'],
+          options: {
+            faceEnhancerBlend: {
+              type: 'range',
+              min: 0,
+              max: 100,
+              default: 50,
+              description: 'Enhancement strength percentage'
+            }
+          }
+        },
+        frame_enhancer: {
+          name: 'Frame Enhancement',
+          category: 'enhancement',
+          description: 'Upscale and enhance overall image/video quality',
+          requiresModel: true,
+          models: ['real_esrgan_x2plus', 'real_esrgan_x4plus', 'real_esrgan_x4plus_anime_6b'],
+          options: {
+            frameEnhancerBlend: {
+              type: 'range',
+              min: 0,
+              max: 100,
+              default: 80,
+              description: 'Enhancement blend percentage'
+            }
+          }
+        },
+        age_modifier: {
+          name: 'Age Modification',
+          category: 'creative',
+          description: 'Make faces appear younger or older',
+          requiresModel: false,
+          options: {
+            ageModifierDirection: {
+              type: 'range',
+              min: -20,
+              max: 20,
+              default: 0,
+              description: 'Age change in years (negative = younger, positive = older)'
+            }
+          }
+        },
+        expression_restorer: {
+          name: 'Expression Restore',
+          category: 'enhancement',
+          description: 'Restore natural facial expressions',
+          requiresModel: false,
+          defaultModel: 'live_portrait',
+          models: ['live_portrait'],
+          options: {
+            expressionRestorerFactor: {
+              type: 'range',
+              min: 0,
+              max: 100,
+              default: 80,
+              description: 'Expression restoration strength'
+            }
+          }
+        },
+        face_editor: {
+          name: 'Face Editor',
+          category: 'creative',
+          description: 'Fine-tune facial features and expressions',
+          requiresModel: false,
+          defaultModel: 'live_portrait',
+          models: ['live_portrait'],
+          options: {
+            faceEditorParams: {
+              type: 'object',
+              properties: {
+                eyeOpenRatio: { type: 'range', min: 0, max: 2, default: 1, description: 'Eye openness' },
+                mouthSmile: { type: 'range', min: -1, max: 1, default: 0, description: 'Smile intensity' },
+                headYaw: { type: 'range', min: -30, max: 30, default: 0, description: 'Head rotation left/right' },
+                headPitch: { type: 'range', min: -30, max: 30, default: 0, description: 'Head tilt up/down' },
+                headRoll: { type: 'range', min: -30, max: 30, default: 0, description: 'Head roll left/right' }
+              }
+            }
+          }
+        },
+        frame_colorizer: {
+          name: 'Frame Colorizer',
+          category: 'creative',
+          description: 'Colorize black and white videos',
+          requiresModel: true,
+          defaultModel: 'ddcolor',
+          models: ['ddcolor'],
+          options: {
+            frameColorizerBlend: {
+              type: 'range',
+              min: 0,
+              max: 100,
+              default: 80,
+              description: 'Colorization strength'
+            }
+          }
+        },
+        lip_syncer: {
+          name: 'Lip Sync',
+          category: 'creative',
+          description: 'Synchronize lips with audio',
+          requiresModel: true,
+          defaultModel: 'wav2lip_gan',
+          models: ['wav2lip_gan'],
+          options: {
+            lipSyncerWeight: {
+              type: 'range',
+              min: 0,
+              max: 2,
+              default: 1,
+              description: 'Lip sync strength'
+            }
+          }
+        },
+        deep_swapper: {
+          name: 'Deep Swapper',
+          category: 'core',
+          description: 'Advanced face swapping with deep learning',
+          requiresModel: true,
+          defaultModel: 'ghost_unet',
+          models: ['ghost_unet'],
+          options: {
+            deepSwapperMorph: {
+              type: 'range',
+              min: 0,
+              max: 100,
+              default: 80,
+              description: 'Morphing strength'
+            }
+          }
+        },
+        face_debugger: {
+          name: 'Face Debugger',
+          category: 'debug',
+          description: 'Debug face detection and processing',
+          requiresModel: false,
+          options: {
+            faceDebuggerItems: {
+              type: 'multiselect',
+              options: ['bbox', 'landmark', 'face-mask'],
+              default: 'bbox,landmark',
+              description: 'Debug overlay items'
+            }
+          }
+        }
+      },
+      globalOptions: {
+        hardware: {
+          useCuda: {
+            type: 'boolean',
+            default: true,
+            description: 'Use GPU acceleration (if available)'
+          },
+          deviceId: {
+            type: 'string',
+            default: '0',
+            description: 'GPU device ID'
+          }
+        },
+        faceSelection: {
+          faceSelectorMode: {
+            type: 'select',
+            options: ['automatic', 'reference', 'one', 'many', 'best-worst', 'left-right'],
+            default: 'automatic',
+            description: 'How to select faces'
+          },
+          faceSelectorGender: {
+            type: 'select',
+            options: ['any', 'male', 'female'],
+            default: 'any',
+            description: 'Filter faces by gender'
+          },
+          faceSelectorAgeStart: {
+            type: 'range',
+            min: 0,
+            max: 100,
+            default: 0,
+            description: 'Minimum age to process'
+          },
+          faceSelectorAgeEnd: {
+            type: 'range',
+            min: 0,
+            max: 100,
+            default: 100,
+            description: 'Maximum age to process'
+          }
+        },
+        output: {
+          outputVideoQuality: {
+            type: 'range',
+            min: 10,
+            max: 100,
+            default: 80,
+            description: 'Video quality percentage'
+          },
+          outputVideoEncoder: {
+            type: 'select',
+            options: ['libx264', 'libx265', 'libvpx-vp9', 'h264_nvenc', 'hevc_nvenc'],
+            default: 'libx264',
+            description: 'Video encoder'
+          },
+          outputVideoPreset: {
+            type: 'select',
+            options: ['ultrafast', 'superfast', 'veryfast', 'faster', 'fast', 'medium', 'slow', 'slower', 'veryslow'],
+            default: 'medium',
+            description: 'Encoding speed vs quality'
+          }
+        }
+      },
+      usagePatterns: {
+        beginner: {
+          name: 'Simple Face Swap',
+          processors: ['face_swapper'],
+          description: 'Basic face swapping with default settings'
+        },
+        intermediate: {
+          name: 'Enhanced Quality',
+          processors: ['face_swapper', 'face_enhancer'],
+          description: 'Face swap with quality enhancement'
+        },
+        creative: {
+          name: 'Creative Editing',
+          processors: ['face_swapper', 'face_editor', 'age_modifier'],
+          description: 'Face swap with creative modifications'
+        },
+        professional: {
+          name: 'Professional Pipeline',
+          processors: ['face_swapper', 'face_enhancer', 'expression_restorer', 'frame_enhancer'],
+          description: 'Complete processing pipeline for best quality'
+        }
+      }
+    };
+  }
+
   // GET /jobs/quota-today - Get user's daily quota usage for today
   @Get('quota-today')
   async getQuotaToday(@Req() req: any) {
