@@ -122,6 +122,48 @@
 			]
 		},
 		{
+			"name": "Me",
+			"item": [
+				{
+					"name": "Get Profil Me",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{url}}/user/me",
+							"host": [
+								"{{url}}"
+							],
+							"path": [
+								"user",
+								"me"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Subscription User Login",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{url}}/user/me/subscription",
+							"host": [
+								"{{url}}"
+							],
+							"path": [
+								"user",
+								"me",
+								"subscription"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
 			"name": "User",
 			"item": [
 				{
@@ -172,6 +214,86 @@
 		{
 			"name": "User Subscription",
 			"item": [
+				{
+					"name": "Get All User's Subscription",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status 200\", () => pm.response.to.have.status(200));\r",
+									"const j = pm.response.json();"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{url}}/user/subscriptions",
+							"host": [
+								"{{url}}"
+							],
+							"path": [
+								"user",
+								"subscriptions"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "READ User's Subscription with Plan Entitlements",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status 200\", () => pm.response.to.have.status(200));\r",
+									"const j = pm.response.json();\r",
+									"\r",
+									"pm.test(\"Has plan and planEntitlements/quota\", () => {\r",
+									"  pm.expect(j).to.have.property(\"plan\");\r",
+									"  pm.expect(Boolean(j.planEntitlements || j.entitlements || j.quota)).to.eql(true);\r",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{url}}/user/{{user_id}}/quota",
+							"host": [
+								"{{url}}"
+							],
+							"path": [
+								"user",
+								"{{user_id}}",
+								"quota"
+							]
+						}
+					},
+					"response": []
+				},
 				{
 					"name": "UPDATE Subscription to User",
 					"event": [
@@ -227,49 +349,6 @@
 								"user",
 								"{{user_id}}",
 								"subscription"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "READ User's Subscription with Plan Entitlements",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"pm.test(\"Status 200\", () => pm.response.to.have.status(200));\r",
-									"const j = pm.response.json();\r",
-									"\r",
-									"pm.test(\"Has plan and planEntitlements/quota\", () => {\r",
-									"  pm.expect(j).to.have.property(\"plan\");\r",
-									"  pm.expect(Boolean(j.planEntitlements || j.entitlements || j.quota)).to.eql(true);\r",
-									"});"
-								],
-								"type": "text/javascript",
-								"packages": {}
-							}
-						}
-					],
-					"request": {
-						"method": "GET",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json",
-								"type": "text"
-							}
-						],
-						"url": {
-							"raw": "{{url}}/user/{{user_id}}/quota",
-							"host": [
-								"{{url}}"
-							],
-							"path": [
-								"user",
-								"{{user_id}}",
-								"quota"
 							]
 						}
 					},
@@ -493,160 +572,6 @@
 					"response": []
 				},
 				{
-					"name": "Upsert Entitlements to Plans",
-					"event": [
-						{
-							"listen": "prerequest",
-							"script": {
-								"exec": [
-									"const baseUrl = (pm.environment.get(\"url\") || \"\").trim().replace(/\\/+$/,'');\r",
-									"const planId  = pm.environment.get(\"plans_id\");\r",
-									"\r",
-									"if (!baseUrl) {\r",
-									"  console.warn(\"⚠️ ENV `url` kosong. Pastikan URL request sudah hardcode atau isi env `url` (mis: http://localhost:3000).\");\r",
-									"}\r",
-									"\r",
-									"pm.test(\"Precondition: `plans_id` is set (run Create Plans first)\", () => {\r",
-									"  pm.expect(planId, \"Missing `plans_id`\").to.exist;\r",
-									"});\r",
-									"\r",
-									"// Headers + (opsional) Authorization\r",
-									"pm.request.headers.upsert({ key: \"Content-Type\", value: \"application/json\" });\r",
-									"const at = pm.environment.get(\"access_token\") || pm.environment.get(\"bearer_token\");\r",
-									"if (at) pm.request.headers.upsert({ key: \"Authorization\", value: `Bearer ${at}` });\r",
-									"\r",
-									"// Set default variable utk body kalau belum ada (pakai ENV agar konsisten antar request)\r",
-									"function def(name, val) {\r",
-									"  if (pm.environment.get(name) == null && pm.variables.get(name) == null) {\r",
-									"    pm.environment.set(name, val);\r",
-									"  }\r",
-									"}\r",
-									"def(\"version\", \"0\");           // angka: simpan sebagai string, dipakai tanpa quotes di body\r",
-									"def(\"max_video_sec\", \"120\");\r",
-									"def(\"max_resolution\", \"1080p\"); // string → akan di-quote di body\r",
-									"def(\"concurrency\", \"1\");\r",
-									"def(\"watermark\", \"false\");      // boolean (tanpa quotes di body)\r",
-									"\r",
-									"console.log(\"UPSERT → vars\", {\r",
-									"  version: pm.environment.get(\"version\"),\r",
-									"  max_video_sec: pm.environment.get(\"max_video_sec\"),\r",
-									"  max_resolution: pm.environment.get(\"max_resolution\"),\r",
-									"  concurrency: pm.environment.get(\"concurrency\"),\r",
-									"  watermark: pm.environment.get(\"watermark\")\r",
-									"});"
-								],
-								"type": "text/javascript",
-								"packages": {}
-							}
-						},
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"pm.test(\"Status 200/201/204\", () => pm.expect([200,201,204]).to.include(pm.response.code));\r",
-									"\r",
-									"let body = null;\r",
-									"try { body = pm.response.json(); } catch (_) {}\r",
-									"\r",
-									"if (body) {\r",
-									"  pm.test(\"Response has version or entitlements\", () => {\r",
-									"    pm.expect(body.version !== undefined || body.entitlements !== undefined).to.be.true;\r",
-									"  });\r",
-									"}\r",
-									"console.log(\"UPSERT Entitlements →\", { status: pm.response.code, body });"
-								],
-								"type": "text/javascript",
-								"packages": {}
-							}
-						}
-					],
-					"request": {
-						"method": "POST",
-						"header": [],
-						"body": {
-							"mode": "raw",
-							"raw": "{\r\n  \"version\": {{version}},\r\n  \"max_video_sec\": {{max_video_sec}},\r\n  \"max_resolution\": \"{{max_resolution}}\",\r\n  \"concurrency\": {{concurrency}},\r\n  \"watermark\": {{watermark}}\r\n}",
-							"options": {
-								"raw": {
-									"language": "json"
-								}
-							}
-						},
-						"url": {
-							"raw": "{{url}}/plans/{{plans_id}}/entitlements",
-							"host": [
-								"{{url}}"
-							],
-							"path": [
-								"plans",
-								"{{plans_id}}",
-								"entitlements"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "READ Plans ID with Entitlements",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"pm.test(\"Status 200\", () => pm.response.to.have.status(200));\r",
-									"\r",
-									"let j = {};\r",
-									"try { j = pm.response.json(); } catch (_) {}\r",
-									"\r",
-									"const idFromEnv = pm.environment.get(\"plans_id\");\r",
-									"const idInBody = j.id ?? j.data?.id ?? j.result?.id ?? j.planId ?? j.result?.planId;\r",
-									"\r",
-									"// id (opsional—tergantung bentuk response endpoint-mu)\r",
-									"if (idFromEnv || idInBody) {\r",
-									"  pm.test(\"Matching plan id (if present)\", () => {\r",
-									"    pm.expect(String(idInBody || idFromEnv)).to.eql(String(idFromEnv || idInBody));\r",
-									"  });\r",
-									"}\r",
-									"\r",
-									"// entitlements must exist (bentuk fleksibel)\r",
-									"const ents =\r",
-									"  j.entitlements ??\r",
-									"  j.planEntitlements ??\r",
-									"  j.data?.entitlements ??\r",
-									"  j.result?.entitlements ??\r",
-									"  j.plan?.entitlements;\r",
-									"\r",
-									"pm.test(\"Has entitlements\", () => pm.expect(ents, \"missing entitlements\").to.exist);\r",
-									"if (ents) {\r",
-									"  pm.test(\"Entitlements is array/object\", () => {\r",
-									"    pm.expect(Array.isArray(ents) || typeof ents === 'object').to.be.true;\r",
-									"  });\r",
-									"}\r",
-									"\r",
-									"console.log(\"READ Plan by ID w/ Entitlements →\", { idFromEnv, idInBody, keys: Object.keys(j || {}) });"
-								],
-								"type": "text/javascript",
-								"packages": {}
-							}
-						}
-					],
-					"request": {
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{url}}/plans/{{plans_id}}",
-							"host": [
-								"{{url}}"
-							],
-							"path": [
-								"plans",
-								"{{plans_id}}"
-							]
-						}
-					},
-					"response": []
-				},
-				{
 					"name": "DELETE Plans",
 					"event": [
 						{
@@ -672,6 +597,135 @@
 							"path": [
 								"plans",
 								"{{plans_id}}"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Entitlements",
+			"item": [
+				{
+					"name": "Get Entitlements by Id",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{url}}/entitlements/{{entitlements_id}}",
+							"host": [
+								"{{url}}"
+							],
+							"path": [
+								"entitlements",
+								"{{entitlements_id}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Entitlements by Plan_Id",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{url}}/entitlements/plan/{{plans_id}}",
+							"host": [
+								"{{url}}"
+							],
+							"path": [
+								"entitlements",
+								"plan",
+								"{{plans_id}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Latest Entitlements by Plan Id",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{url}}/entitlements/plan/{{plans_id}}/latest",
+							"host": [
+								"{{url}}"
+							],
+							"path": [
+								"entitlements",
+								"plan",
+								"{{plans_id}}",
+								"latest"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "GET All Entitlements",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{url}}/entitlements",
+							"host": [
+								"{{url}}"
+							],
+							"path": [
+								"entitlements"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create Entitlements to Plan",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"planId\": {{plans_id}},\r\n  \"version\": 2,\r\n  \"max_processors_per_job\": 3,\r\n  \"max_weight_per_job\": 5,\r\n  \"daily_weight_quota\": 25,\r\n  \"max_video_sec\": 60,\r\n  \"max_resolution\": \"720p\",\r\n  \"watermark\": true,\r\n  \"concurrency\": 2\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}/entitlements",
+							"host": [
+								"{{url}}"
+							],
+							"path": [
+								"entitlements"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Entitlements",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{url}}/entitlements/{{entitlements_id}}",
+							"host": [
+								"{{url}}"
+							],
+							"path": [
+								"entitlements",
+								"{{entitlements_id}}"
 							]
 						}
 					},
@@ -1079,6 +1133,62 @@
 					"response": []
 				}
 			]
+		},
+		{
+			"name": "Media Asset",
+			"item": [
+				{
+					"name": "Get MinIO Output Face Fusion",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status 200\", () => pm.response.to.have.status(200));\r",
+									"const j = pm.response.json();"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{url}}/media-assets/output/facefusion",
+							"host": [
+								"{{url}}"
+							],
+							"path": [
+								"media-assets",
+								"output",
+								"facefusion"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Media",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{url}}/media-assets/output/{{output_media_id}}",
+							"host": [
+								"{{url}}"
+							],
+							"path": [
+								"media-assets",
+								"output",
+								"{{output_media_id}}"
+							]
+						}
+					},
+					"response": []
+				}
+			]
 		}
 	],
 	"auth": {
@@ -1155,7 +1265,7 @@
 	"variable": [
 		{
 			"key": "bearer_token",
-			"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjbGllbnRfaWQiOiJwcmltZWF1dGgtYWRtaW4iLCJleHAiOjE3NTczMDMyNDcsImlhdCI6MTc1NzI5OTY0NywicmVhbG1faWQiOiI4OTMwZWY3NC1iNmNmLTQ2NWEtOWE3NC04ZjljYzU5MWMzZTMiLCJzY29wZSI6Im9wZW5pZCBwcm9maWxlIGVtYWlsIiwic3ViIjoiNjBlOTkyOWUtNmUzMC00MzFjLTlmMWItNTI5YjYxODY3NzU5IiwidG9rZW5fdHlwZSI6ImFjY2VzcyJ9.WsYwGPh4wYQA81PCHNhhvvViT-ImxHH3iJxhb8B5hQQ"
+			"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjbGllbnRfaWQiOiJwcmltZWF1dGgtYWRtaW4iLCJleHAiOjE3NTc1Njc4NDMsImlhdCI6MTc1NzU2NDI0MywicmVhbG1faWQiOiI4OTMwZWY3NC1iNmNmLTQ2NWEtOWE3NC04ZjljYzU5MWMzZTMiLCJzY29wZSI6Im9wZW5pZCBwcm9maWxlIGVtYWlsIiwic3ViIjoiNjBlOTkyOWUtNmUzMC00MzFjLTlmMWItNTI5YjYxODY3NzU5IiwidG9rZW5fdHlwZSI6ImFjY2VzcyJ9.bKOtaa_s9eZCkcFQQpr648yFeWKRuZIKjMTiLKYIh9Y"
 		},
 		{
 			"key": "url",
@@ -1163,11 +1273,11 @@
 		},
 		{
 			"key": "user_id",
-			"value": "113ccfa7-7bdc-4b35-88b6-e78db4f0293d"
+			"value": "eb850b0c-eb07-4fe3-b751-32ee2e855389"
 		},
 		{
 			"key": "plans_id",
-			"value": "1"
+			"value": "122"
 		},
 		{
 			"key": "features_id",
@@ -1179,11 +1289,11 @@
 		},
 		{
 			"key": "refresh_token",
-			"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjbGllbnRfaWQiOiJwcmltZWF1dGgtYWRtaW4iLCJleHAiOjE3NTc0MDkzMDgsImlhdCI6MTc1NzMyMjkwOCwicmVhbG1faWQiOiI4OTMwZWY3NC1iNmNmLTQ2NWEtOWE3NC04ZjljYzU5MWMzZTMiLCJzY29wZSI6Im9wZW5pZCBwcm9maWxlIGVtYWlsIiwic3ViIjoiNjBlOTkyOWUtNmUzMC00MzFjLTlmMWItNTI5YjYxODY3NzU5IiwidG9rZW5fdHlwZSI6InJlZnJlc2gifQ.9xLhqlyFuqNVHb1RpkbinoekKLBWakiXpZ6TQMOdu6Q"
+			"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjbGllbnRfaWQiOiJwcmltZWF1dGgtYWRtaW4iLCJleHAiOjE3NTc2NTA2NDMsImlhdCI6MTc1NzU2NDI0MywicmVhbG1faWQiOiI4OTMwZWY3NC1iNmNmLTQ2NWEtOWE3NC04ZjljYzU5MWMzZTMiLCJzY29wZSI6Im9wZW5pZCBwcm9maWxlIGVtYWlsIiwic3ViIjoiNjBlOTkyOWUtNmUzMC00MzFjLTlmMWItNTI5YjYxODY3NzU5IiwidG9rZW5fdHlwZSI6InJlZnJlc2gifQ.Ma0ZdhLdAzrbEjXqwYjkTarqhoWnDLxj5Hj7WIXgMrU"
 		},
 		{
 			"key": "code_plan",
-			"value": "PREMIUM"
+			"value": "PRO"
 		},
 		{
 			"key": "status_plan",
@@ -1191,7 +1301,7 @@
 		},
 		{
 			"key": "name_plan",
-			"value": "Premium"
+			"value": "asdsadas"
 		},
 		{
 			"key": "priority_plan",
@@ -1244,6 +1354,15 @@
 		{
 			"key": "features_weight",
 			"value": "3"
+		},
+		{
+			"key": "output_media_id",
+			"value": ""
+		},
+		{
+			"key": "entitlements_id",
+			"value": "",
+			"type": "default"
 		}
 	]
 }
