@@ -37,7 +37,7 @@ export class JobsController {
           description: 'Swap faces between source and target',
           requiresModel: false,
           defaultModel: 'inswapper_128',
-          models: ['inswapper_128', 'inswapper_128_fp16', 'simswap_256', 'simswap_512_unofficial'],
+          models: ['blendswap_256', 'inswapper_128', 'inswapper_128_fp16', 'simswap_256', 'simswap_512', 'uniface_256'],
           options: {
             faceSwapperPixelBoost: {
               type: 'select',
@@ -51,7 +51,7 @@ export class JobsController {
           category: 'enhancement',
           description: 'Improve face quality and clarity',
           requiresModel: true,
-          models: ['gfpgan_1.4', 'gfpgan_1.3', 'gfpgan_1.2', 'codeformer', 'restoreformer'],
+          models: ['codeformer', 'gfpgan_1.2', 'gfpgan_1.3', 'gfpgan_1.4', 'gpen_bfr_256', 'gpen_bfr_512', 'gpen_bfr_1024', 'gpen_bfr_2048', 'restoreformer_plus_plus'],
           options: {
             faceEnhancerBlend: {
               type: 'range',
@@ -67,7 +67,7 @@ export class JobsController {
           category: 'enhancement',
           description: 'Upscale and enhance overall image/video quality',
           requiresModel: true,
-          models: ['real_esrgan_x2plus', 'real_esrgan_x4plus', 'real_esrgan_x4plus_anime_6b'],
+          models: ['real_esrgan_x2plus', 'real_esrgan_x4plus', 'real_esrgan_x4plus_anime_6b', 'real_hatgan_x4'],
           options: {
             frameEnhancerBlend: {
               type: 'range',
@@ -135,8 +135,8 @@ export class JobsController {
           category: 'creative',
           description: 'Colorize black and white videos',
           requiresModel: true,
-          defaultModel: 'ddcolor',
-          models: ['ddcolor'],
+          defaultModel: 'deoldify',
+          models: ['deoldify', 'instacolor'],
           options: {
             frameColorizerBlend: {
               type: 'range',
@@ -153,7 +153,7 @@ export class JobsController {
           description: 'Synchronize lips with audio',
           requiresModel: true,
           defaultModel: 'wav2lip_gan',
-          models: ['wav2lip_gan'],
+          models: ['wav2lip', 'wav2lip_gan'],
           options: {
             lipSyncerWeight: {
               type: 'range',
@@ -169,8 +169,8 @@ export class JobsController {
           category: 'core',
           description: 'Advanced face swapping with deep learning',
           requiresModel: true,
-          defaultModel: 'ghost_unet',
-          models: ['ghost_unet'],
+          defaultModel: 'deepface_lab',
+          models: ['deepface_lab', 'simswap_512'],
           options: {
             deepSwapperMorph: {
               type: 'range',
@@ -212,7 +212,7 @@ export class JobsController {
         faceSelection: {
           faceSelectorMode: {
             type: 'select',
-            options: ['automatic', 'reference', 'one', 'many', 'best-worst', 'left-right'],
+            options: ['reference', 'one', 'many', 'best-worst', 'left-right'],
             default: 'automatic',
             description: 'How to select faces'
           },

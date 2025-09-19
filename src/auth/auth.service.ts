@@ -207,10 +207,18 @@ export class AuthService {
   /**
    * Tukar code -> tokens, merge claims + userinfo + identity, upsert user, return user+tokens
    */
-  async handlePrimeAuthCallback(code: string) {
+  async  handlePrimeAuthCallback(code: string) {
     if (!code) throw new BadRequestException('Missing authorization code');
 
     const tokens = await this.exchangeCodeForTokens(code);
+    return this.processUserFromTokens(tokens);
+  }
+
+  async handleManualLoginTokens(tokens: any) {
+    return this.processUserFromTokens(tokens);
+  }
+
+  private async processUserFromTokens(tokens: any) {
     const jwt = tokens.id_token ?? tokens.access_token;
     if (!jwt) throw new BadRequestException('No JWT returned from PrimeAuth');
 

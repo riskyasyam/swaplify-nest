@@ -473,7 +473,30 @@ export class JobsService {
       if (status === 'FAILED' && errorMessage) {
         updateData.errorCode = 'FACEFUSION_ERROR';
         updateData.errorMessage = errorMessage;
+        
+        // Parse detailed error information from worker
+        let workerError: any = null;
+        try {
+          if (errorMessage.includes('{') && errorMessage.includes('}')) {
+            workerError = JSON.parse(errorMessage);
+          }
+        } catch (e) {
+          // Error message is not JSON, keep as string
+        }
+        
+        // Log detailed error information for debugging
         console.log(`❌ Job ${jobId} failed: ${errorMessage}`);
+        if (workerError) {
+          console.log(`🔍 Worker error details:`, workerError);
+          
+          // Store detailed error in options for debugging
+          if (workerError.debug || workerError.stderr || workerError.returnCode) {
+            updateData.options = {
+              ...updateData.options,
+              workerError: workerError
+            };
+          }
+        }
       }
       
       // Update job

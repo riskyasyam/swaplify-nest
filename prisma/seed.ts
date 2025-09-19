@@ -98,9 +98,9 @@ async function main() {
     ],
     face_enhancer_model: [
       'codeformer',
-      'gfpgan_1_2',
-      'gfpgan_1_3', 
-      'gfpgan_1_4',
+      'gfpgan_1.2',
+      'gfpgan_1.3', 
+      'gfpgan_1.4',
       'gpen_bfr_256',
       'gpen_bfr_512',
       'gpen_bfr_1024',

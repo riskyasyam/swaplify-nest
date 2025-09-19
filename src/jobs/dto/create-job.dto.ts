@@ -58,7 +58,7 @@ export class FaceFusionOptionsDto {
 
   // Face Swapper
   @IsOptional()
-  @IsIn(['inswapper_128', 'inswapper_128_fp16', 'simswap_512', 'simswap_224', 'deepinsight_128'])
+  @IsIn(['blendswap_256', 'inswapper_128', 'inswapper_128_fp16', 'simswap_256', 'simswap_512', 'uniface_256'])
   faceSwapperModel?: string;
 
   @IsOptional()
@@ -67,7 +67,7 @@ export class FaceFusionOptionsDto {
 
   // Face Enhancer
   @IsOptional()
-  @IsIn(['gfpgan_1.4', 'gfpgan_1.3', 'codeformer', 'restoreformer'])
+  @IsIn(['codeformer', 'gfpgan_1.2', 'gfpgan_1.3', 'gfpgan_1.4', 'gpen_bfr_256', 'gpen_bfr_512', 'gpen_bfr_1024', 'gpen_bfr_2048', 'restoreformer_plus_plus'])
   faceEnhancerModel?: string;
 
   @IsOptional()
@@ -78,7 +78,7 @@ export class FaceFusionOptionsDto {
 
   // Frame Enhancer
   @IsOptional()
-  @IsIn(['realesrgan_x2plus', 'realesrgan_x4plus', 'realesrnet_x4plus', 'esrgan_4x'])
+  @IsIn(['real_esrgan_x2plus', 'real_esrgan_x4plus', 'real_esrgan_x4plus_anime_6b', 'real_hatgan_x4'])
   frameEnhancerModel?: string;
 
   @IsOptional()
