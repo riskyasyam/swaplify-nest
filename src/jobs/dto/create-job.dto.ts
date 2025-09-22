@@ -169,7 +169,7 @@ export class FaceFusionOptionsDto {
 
   // Face Selection
   @IsOptional()
-  @IsIn(['automatic', 'reference', 'one', 'many', 'best-worst', 'left-right'])
+  @IsIn(['many', 'one', 'reference'])
   faceSelectorMode?: string;
 
   @IsOptional()
@@ -183,7 +183,7 @@ export class FaceFusionOptionsDto {
   faceSelectorOrder?: string;
 
   @IsOptional()
-  @IsIn(['any', 'male', 'female'])
+  @IsIn(['male', 'female'])
   faceSelectorGender?: string;
 
   @IsOptional()

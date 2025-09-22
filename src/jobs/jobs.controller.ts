@@ -212,15 +212,15 @@ export class JobsController {
         faceSelection: {
           faceSelectorMode: {
             type: 'select',
-            options: ['reference', 'one', 'many', 'best-worst', 'left-right'],
-            default: 'automatic',
-            description: 'How to select faces'
+            options: ['many', 'one', 'reference'],  // Remove invalid options
+            default: 'one',                         // Change default
+            description: 'Face selection mode'
           },
           faceSelectorGender: {
-            type: 'select',
-            options: ['any', 'male', 'female'],
-            default: 'any',
-            description: 'Filter faces by gender'
+            type: 'select', 
+            options: ['male', 'female'],            // Remove 'any'
+            default: 'male',                        // Change default
+            description: 'Target gender filter'
           },
           faceSelectorAgeStart: {
             type: 'range',

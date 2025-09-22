@@ -167,11 +167,11 @@ export class JobsService {
       lipSyncerWeight: 1.0,
       deepSwapperMorph: 80,
       
-      // Global defaults
-      faceSelectorMode: 'automatic',
-      referenceFaceDistance: 0.3,
+      // Global defaults - ✅ FIXED to valid values
+      faceSelectorMode: 'one',              // Valid choice
+      referenceFaceDistance: 0.6,           // Standard value
       faceSelectorOrder: 'left-right',
-      faceSelectorGender: 'any',
+      faceSelectorGender: 'male',           // Valid choice
       faceSelectorAgeStart: 0,
       faceSelectorAgeEnd: 100,
       faceDetectorModel: 'retinaface',
@@ -236,10 +236,116 @@ export class JobsService {
     return result;
   }
 
-  async create(input: CreateJobInput) {
-    const { userId, sourceAssetId, targetAssetId, audioAssetId, processors, options } = input;
+  /**
+   * Auto-apply default models for processors that require them
+   */
+  private applyRequiredModels(processors: string[], options: any): any {
+    const result = { ...options };
+    
+    // Auto-apply default models for processors that need them
+    if (processors.includes('face_enhancer') && !result.faceEnhancerModel) {
+      result.faceEnhancerModel = 'gfpgan_1_3';
+    }
+    
+    if (processors.includes('frame_enhancer') && !result.frameEnhancerModel) {
+      result.frameEnhancerModel = 'real_esrgan_x4plus';
+    }
+    
+    if (processors.includes('frame_colorizer') && !result.frameColorizerModel) {
+      result.frameColorizerModel = 'deoldify';
+    }
+    
+    if (processors.includes('lip_syncer') && !result.lipSyncerModel) {
+      result.lipSyncerModel = 'wav2lip_gan';
+    }
+    
+    if (processors.includes('deep_swapper') && !result.deepSwapperModel) {
+      result.deepSwapperModel = 'deepface_lab';
+    }
+    
+    return result;
+  }
 
-    // 0. Validate processor options
+  /**
+   * Normalize model names to match FaceFusion CLI expectations
+   */
+  private normalizeModelNames(options: any): any {
+    const modelMapping = {
+      // Face enhancer models
+      'gfpgan_1.2': 'gfpgan_1_2',
+      'gfpgan_1.3': 'gfpgan_1_3', 
+      'gfpgan_1.4': 'gfpgan_1_4',
+      
+      // Frame enhancer models  
+      'real_esrgan_x2plus': 'real_esrgan_x2plus',
+      'real_esrgan_x4plus': 'real_esrgan_x4plus',
+      'real_esrgan_x4plus_anime_6b': 'real_esrgan_x4plus_anime_6b',
+      'real_hatgan_x4': 'real_hatgan_x4'
+    };
+
+    const normalized = { ...options };
+    
+    // Normalize all model fields
+    Object.keys(normalized).forEach(key => {
+      if (key.includes('Model') && normalized[key] && modelMapping[normalized[key]]) {
+        normalized[key] = modelMapping[normalized[key]];
+      }
+    });
+    
+    return normalized;
+  }
+
+  /**
+   * Sort processors for optimal execution order
+   * CRITICAL: face_swapper must ALWAYS be first!
+   */
+  private sortProcessorsForOptimalOrder(processors: string[]): string[] {
+    if (!processors?.length) return ['face_swapper'];
+    
+    const priorityOrder = [
+      'face_swapper',      // MUST be first - baseli ne face replacement
+      'face_enhancer',     // Enhance the swapped face
+      'frame_enhancer',    // Upscale the enhanced frame  
+      'frame_colorizer',   // Colorize the upscaled frame
+      'age_modifier',      // Modify age of swapped face
+      'expression_restorer', // Restore expressions
+      'face_editor',       // Edit facial features
+      'lip_syncer',        // Sync lips with audio
+      'deep_swapper',      // Advanced swapping
+    ];
+    
+    // Sort based on priority order
+    const sorted: string[] = [];
+    
+    // Add processors in priority order
+    for (const priority of priorityOrder) {
+      if (processors.includes(priority)) {
+        sorted.push(priority);
+      }
+    }
+    
+    // Add any remaining processors
+    for (const processor of processors) {
+      if (!sorted.includes(processor)) {
+        sorted.push(processor);
+      }
+    }
+    
+    console.log('🔄 Processor order optimization:', {
+      original: processors,
+      optimized: sorted
+    });
+    
+    return sorted;
+  }
+
+  async create(input: CreateJobInput) {
+    let { userId, sourceAssetId, targetAssetId, audioAssetId, processors, options } = input;
+
+    // 0.1. Sort processors for optimal order (CRITICAL!)
+    processors = this.sortProcessorsForOptimalOrder(processors);
+
+    // 0.2. Validate processor options
     const validationErrors = this.validateProcessorOptions(processors, options);
     if (validationErrors.length > 0) {
       throw new BadRequestException({
@@ -248,8 +354,11 @@ export class JobsService {
       });
     }
 
-    // 0.1. Apply default values
-    const finalOptions = this.applyDefaultOptions(processors, options);
+    // 0.3. Apply default values
+    let finalOptions = this.applyDefaultOptions(processors, options);
+
+    // 0.4. Auto-apply required models
+    finalOptions = this.applyRequiredModels(processors, finalOptions);
 
     // 1. Ambil subscription aktif
     const subscription = await this.prisma.subscription.findFirst({
@@ -346,6 +455,24 @@ export class JobsService {
     // 10. Publish job to NSQ
     const nsqTopic = this.configService.get('NSQ_TOPIC', 'facefusion_jobs');
     console.log(`🚦 Attempting to publish job ${job.id} to NSQ topic '${nsqTopic}'...`);
+    
+    // Apply normalization before publishing
+    const normalizedOptions = this.normalizeModelNames(finalOptions);
+    
+    // Add detailed logging before NSQ publish
+    console.log('🚦 Final job options before NSQ publish:');
+    console.log('- Processors:', processors);
+    console.log('- Original options:', options);
+    console.log('- Final options:', normalizedOptions);
+    console.log('- Required validations passed:', {
+      faceSelectorMode: normalizedOptions.faceSelectorMode,
+      faceSelectorGender: normalizedOptions.faceSelectorGender,
+      hasRequiredModels: processors.map(p => {
+        const modelField = `${p}Model`;
+        return `${p}: ${normalizedOptions[modelField] || 'NO_MODEL'}`;
+      })
+    });
+    
     try {
       await this.nsq.publishJob(nsqTopic, {
         jobId: job.id,
@@ -354,7 +481,7 @@ export class JobsService {
         targetAssetId: job.targetAssetId,
         audioAssetId: job.audioAssetId,
         processors: job.processors,
-        options: job.options, // This now contains the processed options
+        options: normalizedOptions,  // Use normalized options
       });
       console.log(`✅ Published job ${job.id} to NSQ topic '${nsqTopic}'`);
     } catch (err) {
